@@ -26,11 +26,11 @@ type Status int
 
 // Status enumeration types
 const (
-	Waiting        Status = 0
-	AckCommand     Status = 1
-	InvalidCommand Status = 2
-	TimedOut       Status = 3
-	NoUsername     Status = 5
+	Waiting        Status = iota
+	AckCommand     Status = iota
+	InvalidCommand Status = iota
+	TimedOut       Status = iota
+	NoUsername     Status = iota
 )
 
 // Connection is a struct for managing connections
@@ -129,11 +129,4 @@ func (client *Connection) run() {
 	// I'm keeping is separated from the logic below to make everything a bit more clean
 	go client.writeSocket()
 	go client.readSocket()
-
-	/*
-		TODO: Create a GameHandler
-		Should wait x ms per tick for the connected users to send in a command,
-		or execute as timed out if none is sent. After the orders we will send out an updated state of the map
-
-	*/
 }

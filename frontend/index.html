@@ -5,28 +5,32 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <title>GO Websockets</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="stylesheet" type="text/css" media="screen"  />
+    <link rel="stylesheet" href="main.css">
+    <link href="https://fonts.googleapis.com/css?family=Source+Code+Pro" rel="stylesheet"> 
+    
 </head>
 <body>
-    <script>
-        window.addEventListener("load", function(evt) {
-   
-            ws = new WebSocket("ws://localhost:8080/ws");
-            ws.onopen = function(evt) {
-                console.log("OPEN");
-            }
-            ws.onclose = function(evt) {
-                console.log("CLOSE");
-                ws = null;
-            }
-            ws.onmessage = function(evt) {
-                console.log("RESPONSE: " + evt.data);
-            }
-            ws.onerror = function(evt) {
-                console.log("ERROR: " + evt.data);
-            }
-            
-        })
-    </script>
+    <div id="page">
+        <div id="parent">
+            <canvas id="canvas">
+            </canvas>
+        </div>
+        
+        <div id="logArea">
+        </div>
+    </div>
+    <div id="admin">
+        <div>
+            Admin area (testing)
+        </div>
+        <div>
+            <button onclick="admin_connect()">Connect</button>
+            <button>Start</button>
+            <button>Pause</button>
+            <button>Restart</button>
+        </div>
+    </div>
+    <script src="main.js"></script>
+    <script src="admin.js"></script>
 </body>
 </html>

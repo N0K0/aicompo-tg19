@@ -1,0 +1,39 @@
+#parent {
+    height: 1080px;
+    width: 1920px;
+    margin: 0px 0px 0px 0px;
+    padding: 0px 0px 0px 0px;
+}
+
+#page {
+    display: flex;
+    justify-content: center;
+    max-width: 100vw;
+    max-height: 100vh;
+}
+
+#admin {
+    display: flex;
+    justify-content: center;
+    flex-direction: column;
+    align-items: center;
+}
+
+#logArea {
+    padding-left: 1em;
+    border: 1px solid black;
+    width: 15%;
+    max-height: 1080px;
+    overflow-y: auto;
+}
+
+body {
+    background-color: darkgray;
+}
+
+
+* {
+    margin: 0px 0px 0px 0px;
+    padding:  0px 0px 0px 0px;
+    font-family: 'Source Code Pro', monospace;
+}

@@ -6,13 +6,20 @@ import (
 	"strings"
 )
 
-type block int
+type blockstatus int
 
 const (
-	blockClear = 0
-	blockWall  = 1
-	blockFuel  = 2
-	blockAmmo  = 3
+	blockClear = iota // _
+	blockWall  = iota // X
+	blockFuel  = iota // *
+	blockAmmo  = iota // ^
+)
+
+const (
+	blockClearChar = '_'
+	blockWallChar  = 'X'
+	blockFuelChar  = '*'
+	blockAmmoChar  = '^'
 )
 
 /*
@@ -87,15 +94,28 @@ func mapFromString(mapInput string) *GameMap {
 		log.Print(line)
 		contentLine := make([]int, sizeX)
 
-		for _, char := range line {
-			log.Printf("%v", char)
+		for index, char := range line {
+			switch char {
+			case blockClearChar:
+				contentLine[index] = blockClear
+				break
+			case blockWallChar:
+				contentLine[index] = blockWall
+				break
+			case blockAmmoChar:
+				contentLine[index] = blockAmmo
+				break
+			case blockFuelChar:
+				contentLine[index] = blockFuel
+				break
+			default:
+				log.Panicf("Found invalid char: '%c'", char)
+			}
 		}
+		log.Print(contentLine)
 
 		content[index] = contentLine
 	}
-
-	gm.content = content
-	log.Printf("gm:\n%v", content)
 	return gm
 
 }
