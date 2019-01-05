@@ -19,18 +19,29 @@
         <div id="logArea">
         </div>
     </div>
-    <div id="admin">
+    <div id="debug">
         <div>
             Admin area (testing)
         </div>
         <div>
-            <button onclick="admin_connect()">Connect</button>
-            <button>Start</button>
+            <button onclick="adminConnect()">Connect</button>
+            <button onclick="adminDisconnect()">Disconnect</button>
+            <button onclick="startSystem()">Start</button>
             <button>Pause</button>
             <button>Restart</button>
+        </div>
+
+        <div>
+            Client (testing)
+        </div>
+        <div>
+            <button onclick="clientConnect()">Connect</button>
+            <button onclick="clientDisconnect()">Disconnect</button>
         </div>
     </div>
     <script src="main.js"></script>
     <script src="admin.js"></script>
+    <script src="client.js"></script>
+
 </body>
 </html>

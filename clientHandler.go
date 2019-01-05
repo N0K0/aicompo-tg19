@@ -110,11 +110,12 @@ func (client *Connection) readSocket() {
 	for {
 		_, message, err := client.conn.ReadMessage()
 		if err != nil {
-			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
+			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure, websocket.CloseNoStatusReceived) {
 				log.Printf("error: %v", err)
 			} else {
 				log.Printf("Client '%s' closed socket at %v ", client.username, client.conn.RemoteAddr())
 			}
+			client.man.unregister <- client
 			break
 		}
 		client.qRecv <- message

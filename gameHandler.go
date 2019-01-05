@@ -55,9 +55,9 @@ func newGameHandler() *GameHandler {
 
 		timerDeadline: time.NewTimer(turnTimeMax),
 		timerMinline:  time.NewTimer(turnTimeMin),
-		register:      make(chan *Player, 10000),
-		unregister:    make(chan *Player, 10000),
-		adminChan:     make(chan string, 10000),
+		register:      make(chan *Player, 10),
+		unregister:    make(chan *Player, 10),
+		adminChan:     make(chan string, 10),
 		gameNumber:    0,
 		roundNumber:   0,
 		gameMap:       *baseGameMap(),
@@ -70,6 +70,8 @@ func (g *GameHandler) run() {
 	for {
 		switch g.status {
 		case pregame:
+			log.Printf("Pregame")
+			time.Sleep(1 * time.Second)
 			break
 		case running:
 			break
@@ -92,6 +94,9 @@ func (g *GameHandler) running() {
 		case <-g.timerDeadline.C:
 			// Exec regardless if all is done
 			break
+		default:
+			log.Print("GameHandler")
+			time.Sleep(1 * time.Second)
 		}
 	}
 }
@@ -124,7 +129,8 @@ type Player struct {
 	turnsLost int
 
 	// GameData
-	posX  int
-	posY  int
-	score int
+	// X,Y is two lists which when zipped creates the coordinates of the snake
+	posX []int
+	posY []int
+	size int
 }

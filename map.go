@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"strconv"
 	"strings"
@@ -11,15 +12,15 @@ type blockstatus int
 const (
 	blockClear = iota // _
 	blockWall  = iota // X
-	blockFuel  = iota // *
-	blockAmmo  = iota // ^
+	blockSnake = iota // *
+	blockFood  = iota // ^
 )
 
 const (
 	blockClearChar = '_'
 	blockWallChar  = 'X'
-	blockFuelChar  = '*'
-	blockAmmoChar  = '^'
+	blockSnakeChar = '*'
+	blockFoodChar  = '^'
 )
 
 /*
@@ -32,7 +33,12 @@ type GameMap struct {
 }
 
 func baseGameMap() *GameMap {
-	return mapFromString(baseMap)
+	defaultSize := 40
+	blankMap := fmt.Sprintf("%v,%v\n", defaultSize, defaultSize)
+	for i := 1; i < defaultSize; i++ {
+		blankMap = blankMap + strings.Repeat("_", defaultSize) + "\n"
+	}
+	return mapFromString(blankMap)
 }
 
 /* mapFromString takes in an map in the form of x,y and then y lines with x length denoting the map.
@@ -72,12 +78,10 @@ func mapFromString(mapInput string) *GameMap {
 		log.Fatal("Got invalid map for the Y")
 	}
 
-	log.Printf("sizeY: %v, mapSize: %v", sizeY, len(lines))
 	if sizeY != len(lines)-1 {
-		log.Fatal("Mismatch betwee size Y of the map and the number given")
+		log.Fatalf("Mismatch between size Y of the map and the number given. SizeY: %v len(lines): %v", sizeY, len(lines))
 	}
 
-	log.Printf("sizeX: %v, mapSize: %v", sizeX, len(lines[1]))
 	if len(lines[1]) != sizeX {
 		log.Fatal("Mistmatch between size of X and the size of the first line of the map")
 	}
@@ -91,7 +95,6 @@ func mapFromString(mapInput string) *GameMap {
 	content := make([][]int, sizeY)
 
 	for index, line := range lines[1:] {
-		log.Print(line)
 		contentLine := make([]int, sizeX)
 
 		for index, char := range line {
@@ -102,28 +105,19 @@ func mapFromString(mapInput string) *GameMap {
 			case blockWallChar:
 				contentLine[index] = blockWall
 				break
-			case blockAmmoChar:
-				contentLine[index] = blockAmmo
+			case blockSnakeChar:
+				contentLine[index] = blockSnake
 				break
-			case blockFuelChar:
-				contentLine[index] = blockFuel
+			case blockFoodChar:
+				contentLine[index] = blockFood
 				break
 			default:
 				log.Panicf("Found invalid char: '%c'", char)
 			}
 		}
-		log.Print(contentLine)
 
 		content[index] = contentLine
 	}
 	return gm
 
 }
-
-const baseMap = `6,6
-X____X
-__XX__
-_XXXX_
-______
-XX_XX_
-XX____`

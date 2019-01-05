@@ -7,7 +7,7 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-// adminHandler takes care
+// adminHandler takes care of starting the game and is used for spectating the events. Used by the webinterface
 type adminHandler struct {
 	gm   *GameHandler
 	cm   *Manager
@@ -16,27 +16,49 @@ type adminHandler struct {
 	qSend chan []byte
 	qRecv chan []byte
 
-	password string
+	ticker *time.Ticker
 }
 
 func (admin *adminHandler) run() {
 	log.Printf("Admin loop started")
 	log.Printf("Game state: %v", admin.gm.status)
 
+	go admin.readSocket()
+	go admin.writeSocket()
+
+	logger := time.NewTicker(3 * time.Second)
 	for {
 		select {
 		case incoming := <-admin.qRecv:
 			log.Printf("New admin message: %s", incoming)
 			break
+		case <-logger.C:
+			admin.logStatus()
+			break
+		default:
+			log.Print("Admin loop")
+			time.Sleep(1 * time.Second)
 		}
 	}
 }
 
+func (admin *adminHandler) logStatus() {
+	statusString := `Adminstatus:
+		Connected Players: %v
+		Connections:       %v
+	`
+
+	numPlayers := len(admin.gm.players)
+	numConn := len(admin.cm.clients)
+
+	log.Printf(statusString, numPlayers, numConn)
+}
+
 func (admin *adminHandler) writeSocket() {
 	log.Print("Write Socket")
-	ticker := time.NewTicker(pingPeriod)
+	admin.ticker = time.NewTicker(pingPeriod)
 	defer func() {
-		ticker.Stop()
+		admin.ticker.Stop()
 	}()
 	for {
 		select {
@@ -64,7 +86,7 @@ func (admin *adminHandler) writeSocket() {
 			if err := w.Close(); err != nil {
 				return
 			}
-		case <-ticker.C:
+		case <-admin.ticker.C:
 			admin.conn.SetWriteDeadline(time.Now().Add(writeWait))
 			if err := admin.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
 				return
@@ -87,12 +109,17 @@ func (admin *adminHandler) readSocket() {
 	for {
 		_, message, err := admin.conn.ReadMessage()
 		if err != nil {
-			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
+			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure, websocket.CloseNoStatusReceived) {
 				log.Printf("error: %v", err)
 			} else {
+				// Admin disconnected
+				log.Printf("Admin closed socket at %v ", admin.conn.RemoteAddr())
+				admin.conn = nil
+				admin.ticker.Stop()
 			}
 			break
 		}
+		log.Print("Waiting for admin message")
 		admin.qRecv <- message
 		log.Printf("Got admin message %s (queue: %v)", message, len(admin.qRecv))
 	}

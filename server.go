@@ -1,12 +1,12 @@
 package main
 
 import (
-	"flag"
 	"html/template"
 	"log"
-	"math/rand"
 	"net/http"
 	"time"
+
+	_ "net/http/pprof"
 
 	"github.com/gorilla/websocket"
 )
@@ -15,25 +15,11 @@ import (
 type Managers struct {
 	gm *GameHandler
 	cm *Manager
+	am *adminHandler
 }
 
-var listenAddr = flag.String("listen_addr", "0.0.0.0:8080", "Add listening socket and port")
 var upgrader = websocket.Upgrader{}
 var index = template.Must(template.ParseFiles("frontend/index.html"))
-
-func generatePassword() string {
-	passwordLen := 5
-
-	rand.Seed(time.Now().UnixNano())
-	letterRunes := []rune("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
-
-	str := make([]rune, passwordLen)
-	for i := range str {
-		str[i] = letterRunes[rand.Intn(len(letterRunes))]
-	}
-
-	return string(str)
-}
 
 func serveHome(w http.ResponseWriter, r *http.Request) {
 	log.Printf("%s: %s", r.RemoteAddr, r.URL)
@@ -58,33 +44,40 @@ func wsConnector(manager *Managers, w http.ResponseWriter, r *http.Request) {
 		log.Print("Error setting up new socket connection")
 		return
 	}
+
+	log.Printf("New socket: %v", &newSocket)
+
 	conn := &Connection{
 		man:      manager.cm,
 		conn:     newSocket,
 		username: "No Username",
 		status:   NoUsername,
 		command:  "No Command",
-		qSend:    make(chan []byte, 10000),
-		qRecv:    make(chan []byte, 10000),
+		qSend:    make(chan []byte, 10),
+		qRecv:    make(chan []byte, 10),
 	}
 
+	log.Print("Register con")
 	manager.cm.register <- conn
+	log.Print("Register con done")
 
+	log.Print("Register Player")
 	manager.gm.register <- &Player{
 		conn:      conn,
 		gm:        manager.gm,
 		man:       manager.cm,
 		turnsLost: 0,
-		posX:      0,
-		posY:      0,
-		score:     0,
+		posX:      make([]int, 0),
+		posY:      make([]int, 0),
+		size:      0,
 	}
+	log.Print("Register player done")
 
 	log.Printf("New socket from %v", newSocket.RemoteAddr())
 }
 
 // wsAdminConnector is used by admins to control the game
-func wsAdminConnector(manager *Managers, password string, w http.ResponseWriter, r *http.Request) {
+func wsAdminConnector(manager *Managers, w http.ResponseWriter, r *http.Request) {
 	log.Printf("Admin connecting...")
 	defer log.Printf("Admin connected")
 
@@ -94,50 +87,66 @@ func wsAdminConnector(manager *Managers, password string, w http.ResponseWriter,
 		return
 	}
 
-	adm := &adminHandler{
-		gm:   manager.gm,
-		cm:   manager.cm,
-		conn: newSocket,
+	// We don't remake the admin connection just because the browser got lost
+	if manager.am == nil {
+		log.Print("Creating new adminmanager")
+		manager.am = &adminHandler{
+			gm:    manager.gm,
+			cm:    manager.cm,
+			conn:  newSocket,
+			qRecv: make(chan []byte, 10),
+			qSend: make(chan []byte, 10),
+		}
+		go manager.am.run()
 
-		password: password,
+	} else if manager.am.conn == nil {
+		log.Print("Using old manager, giving it new socket")
+		manager.am.conn = newSocket
+		// We only need to rerun the sockets
+		go manager.am.readSocket()
+		go manager.am.writeSocket()
 	}
-
-	go adm.run()
 }
 
 func main() {
-	flag.Parse()
-	log.Printf("Starting server at %s", *listenAddr)
-
-	adminPassword := generatePassword()
-	log.Print("******************************************************")
-	log.Print("******************************************************")
-	log.Printf("ADMIN PASSWORD: %s", adminPassword)
-	log.Print("******************************************************")
-	log.Print("******************************************************")
 
 	connectionManager := newManager()
-	go connectionManager.run()
-
 	gameHandler := newGameHandler()
+
+	go connectionManager.run()
 	go gameHandler.run()
 
 	m := &Managers{
 		gm: gameHandler,
 		cm: connectionManager,
+		am: nil,
 	}
 
-	http.Handle("/", http.FileServer(http.Dir("./frontend")))
+	fs := http.FileServer(http.Dir("./frontend"))
+	http.Handle("/", http.StripPrefix("/frontend/", fs))
+
 	http.HandleFunc("/ws",
 		func(w http.ResponseWriter, r *http.Request) {
+			log.Print("/ws")
+			defer log.Print("DONE /ws")
 			wsConnector(m, w, r)
 		},
 	)
 	http.HandleFunc("/admin",
 		func(w http.ResponseWriter, r *http.Request) {
-			wsConnector(m, w, r)
+			log.Print("/admin")
+			defer log.Print("DONE /admin")
+			wsAdminConnector(m, w, r)
 		},
 	)
 
-	log.Fatal(http.ListenAndServe(*listenAddr, nil))
+	s := &http.Server{
+		Addr:           ":8080",
+		Handler:        nil,
+		ReadTimeout:    10 * time.Second,
+		WriteTimeout:   10 * time.Second,
+		MaxHeaderBytes: 1 << 20,
+	}
+
+	log.Fatal(s.ListenAndServe())
 }
