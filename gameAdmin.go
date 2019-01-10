@@ -26,7 +26,7 @@ func (admin *adminHandler) run() {
 	go admin.readSocket()
 	go admin.writeSocket()
 
-	logger := time.NewTicker(3 * time.Second)
+	logger := time.NewTicker(10 * time.Second)
 	for {
 		select {
 		case incoming := <-admin.qRecv:
@@ -36,10 +36,14 @@ func (admin *adminHandler) run() {
 			admin.logStatus()
 			break
 		default:
-			log.Print("Admin loop")
-			time.Sleep(1 * time.Second)
+			//log.Print("Admin loop")
+			//time.Sleep(1 * time.Second)
 		}
 	}
+}
+
+func adminParseCommand(jsonObj string) {
+
 }
 
 func (admin *adminHandler) logStatus() {
@@ -121,6 +125,5 @@ func (admin *adminHandler) readSocket() {
 		}
 		log.Print("Waiting for admin message")
 		admin.qRecv <- message
-		log.Printf("Got admin message %s (queue: %v)", message, len(admin.qRecv))
 	}
 }

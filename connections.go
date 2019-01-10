@@ -2,7 +2,6 @@ package main
 
 import (
 	"log"
-	"time"
 )
 
 // Manager is the struct for keeping order in all our connections
@@ -41,8 +40,8 @@ func (man *Manager) run() {
 			close(client.qSend)
 			delete(man.clients, client)
 		default:
-			log.Print("Manager loop")
-			time.Sleep(1 * time.Second)
+			//log.Print("Manager loop")
+			//time.Sleep(1 * time.Second)
 		}
 	}
 }

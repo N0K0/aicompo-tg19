@@ -70,8 +70,6 @@ func (g *GameHandler) run() {
 	for {
 		switch g.status {
 		case pregame:
-			log.Printf("Pregame")
-			time.Sleep(1 * time.Second)
 			break
 		case running:
 			break

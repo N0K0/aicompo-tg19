@@ -33,10 +33,11 @@ function adminDisconnect() {
 }
 
 
-var startSystem = function() {
+function startSystem() {
     if(admin_ws == null) {
         return False;
     }
+    toLog("Admin: Starting system")
     sendCommand("Start");
 }
 
