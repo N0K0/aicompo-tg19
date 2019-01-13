@@ -8,7 +8,7 @@ import (
 type Manager struct {
 	clients map[*Connection]Connection
 
-	// Registering and removeing connections
+	// Registering and removing connections
 	register   chan *Connection
 	unregister chan *Connection
 }
