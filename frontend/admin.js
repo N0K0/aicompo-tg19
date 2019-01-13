@@ -1,4 +1,4 @@
-var admin_ws = null
+let admin_ws = null
 
 function adminConnect() {
     if(admin_ws != null){
@@ -35,16 +35,40 @@ function adminDisconnect() {
 
 function startSystem() {
     if(admin_ws == null) {
-        return False;
+        return false;
     }
     toLog("Admin: Starting system")
-    sendCommand("Start");
+    sendCommand("start");
 }
 
-var sendCommand = function(command) {
-    toLog("Sending admin command: " + command);
-    payload = {
-        command: command,
+function pauseSystem() {
+    if(admin_ws == null) {
+        return false;
     }
+    toLog("Admin: pauseSystem")
+    sendCommand("pause");
+}
+function restartSystem() {
+    if(admin_ws == null) {
+        return false;
+    }
+    toLog("Admin: restartSystem")
+    sendCommand("restart");
+}
+
+function sendInvalid() {
+    toLog("Sending invalid data")
+
+    let payload = {
+        invalid: "test"
+    };
+    admin_ws.send(JSON.stringify(payload))
+}
+
+function sendCommand(command) {
+    toLog("Sending admin command: " + command);
+    let payload = {
+        command: command,
+    };
     admin_ws.send(JSON.stringify(payload));
 }
