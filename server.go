@@ -122,8 +122,8 @@ func main() {
 		am: nil,
 	}
 
-	fs := http.FileServer(http.Dir("./frontend"))
-	http.Handle("/", http.StripPrefix("/frontend/", fs))
+	fs := http.FileServer(http.Dir("frontend/"))
+	http.Handle("/", fs)
 
 	http.HandleFunc("/ws",
 		func(w http.ResponseWriter, r *http.Request) {
