@@ -33,7 +33,7 @@ type GameMap struct {
 }
 
 func baseGameMap() *GameMap {
-	defaultSize := 40
+	defaultSize := 80
 	blankMap := fmt.Sprintf("%v,%v\n", defaultSize, defaultSize)
 	for i := 1; i < defaultSize; i++ {
 		blankMap = blankMap + strings.Repeat("_", defaultSize) + "\n"
@@ -83,7 +83,7 @@ func mapFromString(mapInput string) *GameMap {
 	}
 
 	if len(lines[1]) != sizeX {
-		log.Fatal("Mistmatch between size of X and the size of the first line of the map")
+		log.Fatal("Mismatch between size of X and the size of the first line of the map")
 	}
 
 	gm := &GameMap{
