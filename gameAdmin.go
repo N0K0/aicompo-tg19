@@ -1,13 +1,14 @@
 package main
 
 import (
+	"encoding/json"
 	"log"
 	"time"
 
 	"github.com/gorilla/websocket"
 )
 
-// adminHandler takes care of starting the game and is used for spectating the events. Used by the webinterface
+// adminHandler takes care of starting the game and is used for spectating the events. Used by the web interface
 type adminHandler struct {
 	gm   *GameHandler
 	cm   *Manager
@@ -31,6 +32,7 @@ func (admin *adminHandler) run() {
 		select {
 		case incoming := <-admin.qRecv:
 			log.Printf("New admin message: %s", incoming)
+			adminParseCommand(incoming)
 			break
 		case <-logger.C:
 			admin.logStatus()
@@ -42,12 +44,18 @@ func (admin *adminHandler) run() {
 	}
 }
 
-func adminParseCommand(jsonObj string) {
+func adminParseCommand(jsonObj []byte) {
+	var c Command
+	err := json.Unmarshal(jsonObj, &c)
+
+	if err != nil {
+		log.Printf("Problem with admin command %v: %v", c, err)
+	}
 
 }
 
 func (admin *adminHandler) logStatus() {
-	statusString := `Adminstatus:
+	statusString := `Admin status:
 		Connected Players: %v
 		Connections:       %v
 	`
