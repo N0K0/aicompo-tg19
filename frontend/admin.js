@@ -1,4 +1,4 @@
-let admin_ws = null
+let admin_ws = null;
 
 function adminConnect() {
     if(admin_ws != null){
@@ -37,7 +37,7 @@ function startSystem() {
     if(admin_ws == null) {
         return false;
     }
-    toLog("Admin: Starting system")
+    toLog("Admin: Starting system");
     sendCommand("start");
 }
 
@@ -45,19 +45,19 @@ function pauseSystem() {
     if(admin_ws == null) {
         return false;
     }
-    toLog("Admin: pauseSystem")
+    toLog("Admin: pauseSystem");
     sendCommand("pause");
 }
 function restartSystem() {
     if(admin_ws == null) {
         return false;
     }
-    toLog("Admin: restartSystem")
+    toLog("Admin: restartSystem");
     sendCommand("restart");
 }
 
 function sendInvalid() {
-    toLog("Sending invalid data")
+    toLog("Sending invalid data");
 
     let payload = {
         invalid: "test"
@@ -71,4 +71,9 @@ function sendCommand(command) {
         command: command,
     };
     admin_ws.send(JSON.stringify(payload));
+}
+
+
+function create_simple_player(){
+    create_player()
 }
