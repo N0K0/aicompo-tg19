@@ -128,7 +128,6 @@ func main() {
 	http.HandleFunc("/ws",
 		func(w http.ResponseWriter, r *http.Request) {
 			log.Print("/ws")
-			defer log.Print("DONE /ws")
 			wsConnector(m, w, r)
 		},
 	)
