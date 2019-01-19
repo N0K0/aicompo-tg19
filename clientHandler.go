@@ -64,31 +64,46 @@ func (client *Connection) writeSocket() {
 	for {
 		select {
 		case message, ok := <-client.qSend:
-			client.conn.SetWriteDeadline(time.Now().Add(writeWait))
+			err := client.conn.SetWriteDeadline(time.Now().Add(writeWait))
+			if err != nil {
+				log.Print("client.conn.SetWriteDeadline")
+			}
 			if !ok {
-				// The hub closed the channel.
-				client.conn.WriteMessage(websocket.CloseMessage, []byte{})
+				// Client closed connection.
+				err := client.conn.WriteMessage(websocket.CloseMessage, []byte{})
+				if err != nil {
+					log.Print("Client closed connection")
+				}
 				return
 			}
 
 			w, err := client.conn.NextWriter(websocket.TextMessage)
 			if err != nil {
-				log.Print("Error with NextWriter")
+				log.Print("client.conn.NextWriter")
 				return
 			}
-			w.Write(message)
+			_, err = w.Write(message)
+			if err != nil {
+				log.Print("w.Write")
+			}
 
 			// Add queued chat messages to the current websocket message.
 			n := len(client.qSend)
 			for i := 0; i < n; i++ {
-				w.Write(<-client.qSend)
+				_, err := w.Write(<-client.qSend)
+				if err != nil {
+					log.Print("w.Write")
+				}
 			}
 
 			if err := w.Close(); err != nil {
 				return
 			}
 		case <-ticker.C:
-			client.conn.SetWriteDeadline(time.Now().Add(writeWait))
+			err := client.conn.SetWriteDeadline(time.Now().Add(writeWait))
+			if err != nil {
+				log.Print("client.conn.SetWriteDeadline")
+			}
 			if err := client.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
 				return
 			}
@@ -99,10 +114,16 @@ func (client *Connection) writeSocket() {
 func (client *Connection) readSocket() {
 	log.Print("Read Socket")
 	client.conn.SetReadLimit(maxMessageSize)
-	client.conn.SetReadDeadline(time.Now().Add(pongWait))
+	err := client.conn.SetReadDeadline(time.Now().Add(pongWait))
+	if err != nil {
+		log.Print("client.conn.SetReadDeadline")
+	}
 	client.conn.SetPongHandler(
 		func(string) error {
-			client.conn.SetReadDeadline(time.Now().Add(pongWait))
+			err := client.conn.SetReadDeadline(time.Now().Add(pongWait))
+			if err != nil {
+				log.Print("client.conn.SetReadDeadline")
+			}
 			return nil
 		},
 	)

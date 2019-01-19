@@ -75,10 +75,17 @@ func (admin *adminHandler) writeSocket() {
 	for {
 		select {
 		case message, ok := <-admin.qSend:
-			admin.conn.SetWriteDeadline(time.Now().Add(writeWait))
+			err := admin.conn.SetWriteDeadline(time.Now().Add(writeWait))
+			if err != nil {
+				log.Print("SetWrDeadline err")
+			}
+
 			if !ok {
 				// The hub closed the channel.
-				admin.conn.WriteMessage(websocket.CloseMessage, []byte{})
+				err := admin.conn.WriteMessage(websocket.CloseMessage, []byte{})
+				if err != nil {
+					log.Print("WriteMessage err")
+				}
 				return
 			}
 
@@ -87,19 +94,28 @@ func (admin *adminHandler) writeSocket() {
 				log.Print("Error with NextWriter")
 				return
 			}
-			w.Write(message)
+			_, err = w.Write(message)
+			if err != nil {
+				log.Print("Error write")
+			}
 
 			// Add queued chat messages to the current websocket message.
 			n := len(admin.qSend)
 			for i := 0; i < n; i++ {
-				w.Write(<-admin.qSend)
+				_, err := w.Write(<-admin.qSend)
+				if err != nil {
+					log.Print("Error write")
+				}
 			}
 
 			if err := w.Close(); err != nil {
 				return
 			}
 		case <-admin.ticker.C:
-			admin.conn.SetWriteDeadline(time.Now().Add(writeWait))
+			err := admin.conn.SetWriteDeadline(time.Now().Add(writeWait))
+			if err != nil {
+				log.Print("Error set deadline Ticker")
+			}
 			if err := admin.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
 				return
 			}
@@ -110,10 +126,16 @@ func (admin *adminHandler) writeSocket() {
 func (admin *adminHandler) readSocket() {
 	log.Print("Admin Read Socket")
 	admin.conn.SetReadLimit(maxMessageSize)
-	admin.conn.SetReadDeadline(time.Now().Add(pongWait))
+	err := admin.conn.SetReadDeadline(time.Now().Add(pongWait))
+	if err != nil {
+		log.Print("Err set read Deadline")
+	}
 	admin.conn.SetPongHandler(
 		func(string) error {
-			admin.conn.SetReadDeadline(time.Now().Add(pongWait))
+			err := admin.conn.SetReadDeadline(time.Now().Add(pongWait))
+			if err != nil {
+				log.Printf("Err set deadline pong")
+			}
 			return nil
 		},
 	)
