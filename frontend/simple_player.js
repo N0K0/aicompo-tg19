@@ -1,6 +1,6 @@
 // This class is a simple implementation of a player to test some things quickly
 
-local_players = {}
+let local_players = {};
 
 
 function create_player() {
@@ -16,7 +16,6 @@ class Player{
     constructor() {
         this.name = makeid();
         this.connection = null;
-        this.tick = 0;
     }
 }
 
@@ -27,10 +26,12 @@ Player.prototype.playerConnect = function() {
     }
     toLog("Connecting as: " + this.name);
     this.connection = new WebSocket("ws://localhost:8080/ws");
+    // noinspection JSUnusedLocalSymbols
     this.connection.onopen = function(evt) {
         console.log("OPEN");
         toLog("Websocket Open");
     };
+    // noinspection JSUnusedLocalSymbols
     this.connection.onclose = function(evt) {
         console.log("CLOSE");
         toLog("Websocket Closed");
@@ -47,12 +48,12 @@ Player.prototype.playerConnect = function() {
 function add_player_gui(new_player) {
     p_name = new_player.name;
 
-    var log = document.getElementById("debug");
-    var item = document.createElement("div");
+    let log = document.getElementById("debug");
+    let item = document.createElement("div");
 
-    var content = `
+    item.innerHTML = `
         ${p_name}   
-        <div>
+        <div id="${p_name}">
             <button onclick="pmove('${p_name}','left')"> ← </button>
             <button onclick="pmove('${p_name}','up')"> ↑ </button>
             <button onclick="pmove('${p_name}','right')"> → </button>
@@ -61,8 +62,6 @@ function add_player_gui(new_player) {
             <button> Invalid </button>
         </div>
     `;
-
-    item.innerHTML = content;
 
     log.appendChild(item);
 }
@@ -74,10 +73,10 @@ function pmove(p_name, command) {
 
 
 function makeid() {
-    var text = "";
-    var possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    let text = "";
+    let possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
   
-    for (var i = 0; i < 5; i++)
+    for (let i = 0; i < 5; i++)
       text += possible.charAt(Math.floor(Math.random() * possible.length));
   
     return text;

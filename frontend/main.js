@@ -1,10 +1,9 @@
 // setup canvas
 
-var canvas = document.querySelector('canvas');
-var parent = document.getElementById("parent");
-var ctx = canvas.getContext('2d');
+let canvas = document.querySelector('canvas');
+let parent = document.getElementById("parent");
+let ctx = canvas.getContext('2d');
 
-var parent = document.getElementById("parent");
 canvas.width = width = parent.offsetWidth;
 canvas.height = height = parent.offsetHeight;
 
@@ -12,12 +11,12 @@ canvas.height = height = parent.offsetHeight;
 
 // Function to add lines to the log
 function toLog(text) {
-    var log = document.getElementById("logArea");
+    let log = document.getElementById("logArea");
 
-    var item = document.createElement("div");
+    let item = document.createElement("div");
     item.innerText = text;
 
-    var doScroll = log.scrollTop > log.scrollHeight - log.clientHeight - 1;
+    let doScroll = log.scrollTop > log.scrollHeight - log.clientHeight - 1;
     log.appendChild(item);
     if (doScroll) {
         log.scrollTop = log.scrollHeight - log.clientHeight;
@@ -25,9 +24,9 @@ function toLog(text) {
 }
 
 // function to generate random number
+// noinspection JSUnusedGlobalSymbols
 function random(min,max) {
-  var num = Math.floor(Math.random()*(max-min)) + min;
-  return num;
+  return  Math.floor(Math.random()*(max-min)) + min;
 }
 
 

@@ -7,9 +7,11 @@ function adminConnect() {
     }
     toLog("Starting admin connect");
     admin_ws = new WebSocket("ws://localhost:8080/admin");
+    // noinspection JSUnusedLocalSymbols
     admin_ws.onopen = function(evt) {
         toLog("Admin socket started");
     };
+    // noinspection JSUnusedLocalSymbols
     admin_ws.onclose = function(evt) {
         toLog("Admin socket closed!");
         admin_ws = null;
