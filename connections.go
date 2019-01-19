@@ -1,8 +1,6 @@
 package main
 
-import (
-	"log"
-)
+import "log"
 
 // Manager is the struct for keeping order in all our connections
 type Manager struct {
@@ -17,8 +15,8 @@ func newManager() *Manager {
 	log.Print("New manager")
 	return &Manager{
 		clients:    make(map[*Connection]Connection),
-		register:   make(chan *Connection, 10),
-		unregister: make(chan *Connection, 10),
+		register:   make(chan *Connection),
+		unregister: make(chan *Connection),
 	}
 }
 
@@ -29,13 +27,12 @@ func (man *Manager) run() {
 		select {
 		case client := <-man.register:
 			log.Printf("Registering new client %v", client)
-			// TODO: Add code for keeping control of new clients
 			man.clients[client] = *client
 			log.Print("Starting new client")
 			go client.run()
 
 		case client := <-man.unregister:
-			log.Printf("Removing client %v", client)
+			log.Print("Removing client")
 			close(client.qRecv)
 			close(client.qSend)
 			delete(man.clients, client)
