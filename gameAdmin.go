@@ -139,7 +139,7 @@ func (admin *adminHandler) readSocket() {
 		_, message, err := admin.conn.ReadMessage()
 		if err != nil {
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure, websocket.CloseNoStatusReceived) {
-				log.Printf("error: %v", err)
+				log.Printf("IsUnexpectedCloseError admin: %v", err)
 			} else {
 				// Admin disconnected
 				log.Printf("Admin closed socket at %v ", admin.conn.RemoteAddr())

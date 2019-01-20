@@ -79,6 +79,10 @@ func (g *GameHandler) run() {
 			delete(g.players, player)
 			close(player.qRecv)
 			close(player.qSend)
+			err := player.conn.Close()
+			if err != nil {
+				log.Print("Problems closing websocket")
+			}
 		}
 	}
 }
