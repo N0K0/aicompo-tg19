@@ -25,11 +25,13 @@ Player.prototype.playerConnect = function() {
         toLog("Client1 already connected!");
     }
     toLog("Connecting as: " + this.name);
+    player = this
     this.connection = new WebSocket("ws://localhost:8080/ws");
     // noinspection JSUnusedLocalSymbols
     this.connection.onopen = function(evt) {
         console.log("OPEN");
         toLog("Websocket Open");
+        player.updateUsername()
     };
     // noinspection JSUnusedLocalSymbols
     this.connection.onclose = function(evt) {
@@ -50,6 +52,14 @@ Player.prototype.disconnect = function() {
     }
 };
 
+Player.prototype.updateUsername = function() {
+    toLog("Sending username: " + this.name);
+    let payload = {
+        type: "username",
+        command: this.name,
+    };
+    this.connection.send(JSON.stringify(payload));
+};
 
 function add_player_gui(new_player) {
     p_name = new_player.name;
@@ -82,15 +92,17 @@ function disconnect_player(p_name) {
 
 }
 
+
 function pmove(p_name, command) {
     let player = local_players[p_name];
     console.log(p_name,command);
-    sendCommand(player, command);
+    sendCommand(player,"move", command);
 }
 
-function sendCommand(player, command) {
+function sendCommand(player,type, command) {
     toLog("Player ("+  player.name + "): " + command);
     let payload = {
+        type: type,
         command: command,
     };
     player.connection.send(JSON.stringify(payload));
