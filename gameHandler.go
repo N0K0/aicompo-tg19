@@ -3,6 +3,8 @@ package main
 import (
 	"log"
 	"time"
+
+	"github.com/gorilla/websocket"
 )
 
 const (
@@ -30,8 +32,7 @@ const (
 type GameHandler struct {
 	// Meta info
 	players map[*Player]Player
-
-	status gamestate
+	status  gamestate
 
 	// Channels
 	timerDeadline *time.Timer
@@ -50,9 +51,8 @@ type GameHandler struct {
 func newGameHandler() *GameHandler {
 	log.Print("New GameHandler")
 	return &GameHandler{
-		players: make(map[*Player]Player),
-		status:  pregame,
-
+		players:       make(map[*Player]Player),
+		status:        pregame,
 		timerDeadline: time.NewTimer(turnTimeMax),
 		timerMinline:  time.NewTimer(turnTimeMin),
 		register:      make(chan *Player, 10),
@@ -67,6 +67,23 @@ func newGameHandler() *GameHandler {
 func (g *GameHandler) run() {
 	log.Print("GameHandler started")
 	defer log.Panic("GameHandler Stopped")
+	go g.gameState()
+	for {
+		select {
+		case player := <-g.register:
+			g.players[player] = *player
+			log.Printf("Players: %v", len(g.players))
+			go player.run()
+		case player := <-g.unregister:
+			log.Printf("Unregistering %v", player)
+			delete(g.players, player)
+			close(player.qRecv)
+			close(player.qSend)
+		}
+	}
+}
+
+func (g *GameHandler) gameState() {
 	for {
 		switch g.status {
 		case pregame:
@@ -120,10 +137,23 @@ func (g *GameHandler) execTurn() {
 // Player struct is strongly connected to the player struct.
 // There should be an 1:1 ration between those entities
 type Player struct {
+	// The websocket to the client
+	conn *websocket.Conn
+
+	// The username of the client
+	username string
+
+	// The status of the connection
+	status Status
+
+	// Last command read
+	command string
+
+	// Channels for caching data
+	qSend chan []byte
+	qRecv chan []byte
 	// Logic data
-	conn      *Connection
 	gm        *GameHandler
-	man       *Manager
 	turnsLost int
 
 	// GameData

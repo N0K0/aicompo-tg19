@@ -11,7 +11,6 @@ import (
 // adminHandler takes care of starting the game and is used for spectating the events. Used by the web interface
 type adminHandler struct {
 	gm   *GameHandler
-	cm   *Manager
 	conn *websocket.Conn
 
 	qSend chan []byte
@@ -57,13 +56,9 @@ func adminParseCommand(jsonObj []byte) {
 func (admin *adminHandler) logStatus() {
 	statusString := `Admin status:
 		Connected Players: %v
-		Connections:       %v
 	`
-
 	numPlayers := len(admin.gm.players)
-	numConn := len(admin.cm.clients)
-
-	log.Printf(statusString, numPlayers, numConn)
+	log.Printf(statusString, numPlayers)
 }
 
 func (admin *adminHandler) writeSocket() {
