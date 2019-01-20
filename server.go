@@ -16,28 +16,28 @@ type Managers struct {
 var upgrader = websocket.Upgrader{}
 
 func wsConnector(manager *Managers, w http.ResponseWriter, r *http.Request) {
-	log.Print("WS started")
-	defer log.Print("WS done")
-
-	if len(manager.gm.players) >= 16 {
-		text := []byte(`{error: "No more spots"}`)
-		w.Write(text)
-		return
-	}
-
 	newSocket, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Print("Error setting up new socket connection")
 		return
 	}
 
+	if len(manager.gm.players) >= 16 {
+		log.Print("Unable to add more players")
+
+		err = newSocket.Close()
+		if err != nil {
+			log.Print("Unable to close new socket")
+		}
+		return
+	}
+
 	log.Printf("New socket: %v", &newSocket)
-	log.Print("Register Player")
 
 	manager.gm.register <- &Player{
 		conn:      newSocket,
 		username:  "No username",
-		status:    0,
+		status:    NoUsername,
 		command:   "",
 		qSend:     make(chan []byte, 10),
 		qRecv:     make(chan []byte, 10),
@@ -80,6 +80,7 @@ func wsAdminConnector(manager *Managers, w http.ResponseWriter, r *http.Request)
 }
 
 func main() {
+	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
 	gameHandler := newGameHandler()
 	go gameHandler.run()
