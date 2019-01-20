@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"log"
 	"time"
 
@@ -26,11 +27,8 @@ type Status int
 
 // Status enumeration types
 const (
-	Waiting        Status = iota
-	AckCommand     Status = iota
-	InvalidCommand Status = iota
-	TimedOut       Status = iota
-	NoUsername     Status = iota
+	Waiting    Status = iota
+	NoUsername Status = iota
 )
 
 func (player *Player) writeSocket() {
@@ -123,10 +121,32 @@ func (player *Player) readSocket() {
 	}
 }
 
+func (player *Player) parseCommand() {
+	for {
+		select {
+		case incoming, ok := <-player.qRecv:
+			log.Printf("Queue: %v", len(player.qRecv))
+
+			if !ok {
+				log.Printf("Closed socket")
+				return
+			}
+
+			command := Command{}
+			err := json.Unmarshal(incoming, command)
+			if err != nil {
+				log.Printf("Invalid json: %v", err)
+			}
+			log.Printf("Json: %v", command)
+		}
+	}
+}
+
 func (player *Player) run() {
 
 	// Routines used to interact with the WebSocket
 	// I'm keeping is separated from the logic below to make everything a bit more clean
 	go player.writeSocket()
 	go player.readSocket()
+	go player.parseCommand()
 }
