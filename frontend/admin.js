@@ -77,5 +77,6 @@ function sendCommand(command) {
 
 
 function create_simple_player(){
-    create_player()
+    create_player();
+    toLog("Players: "  +Object.keys(local_players).length)
 }

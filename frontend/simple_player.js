@@ -33,32 +33,39 @@ Player.prototype.playerConnect = function() {
     };
     // noinspection JSUnusedLocalSymbols
     this.connection.onclose = function(evt) {
-        console.log("CLOSE");
         toLog("Websocket Closed");
         this.connection = null;
     };
     this.connection.onmessage = function(evt) {
-        parseServerMessage(evt);
+        toLog(evt);
     };
     this.connection.onerror = function(evt) {
-        console.log("ERROR: " + evt.data);
+        toLog("ERROR: " + evt.data);
     };
 };
+
+Player.prototype.disconnect = function() {
+    if(this.connection != null){
+        this.connection.close(1000, "Goodbye!");
+    }
+};
+
 
 function add_player_gui(new_player) {
     p_name = new_player.name;
 
     let log = document.getElementById("debug");
     let item = document.createElement("div");
+    item.setAttribute("id", p_name);
 
     item.innerHTML = `
         ${p_name}   
-        <div id="${p_name}">
+        <div>
             <button onclick="pmove('${p_name}','left')"> ← </button>
             <button onclick="pmove('${p_name}','up')"> ↑ </button>
             <button onclick="pmove('${p_name}','right')"> → </button>
             <button onclick="pmove('${p_name}','down')"> ↓ </button>
-            <button> Disconnect </button>
+            <button onclick="disconnect_player('${p_name}')"> Disconnect </button>
             <button> Invalid </button>
         </div>
     `;
@@ -66,11 +73,28 @@ function add_player_gui(new_player) {
     log.appendChild(item);
 }
 
-function pmove(p_name, command) {
-    player = local_players[p_name];
-    console.log(p_name,command);
+function disconnect_player(p_name) {
+    let player = local_players[p_name];
+    player.disconnect();
+
+    let element = document.getElementById(p_name);
+    element.parentNode.removeChild(element);
+
 }
 
+function pmove(p_name, command) {
+    let player = local_players[p_name];
+    console.log(p_name,command);
+    sendCommand(player, command);
+}
+
+function sendCommand(player, command) {
+    toLog("Player ("+  player.name + "): " + command);
+    let payload = {
+        command: command,
+    };
+    player.connection.send(JSON.stringify(payload));
+}
 
 function makeid() {
     let text = "";
