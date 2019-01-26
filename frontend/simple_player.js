@@ -25,7 +25,7 @@ Player.prototype.playerConnect = function() {
         toLog("Client1 already connected!");
     }
     toLog("Connecting as: " + this.name);
-    player = this;
+    player = this
     this.connection = new WebSocket("ws://localhost:8080/ws");
     // noinspection JSUnusedLocalSymbols
     this.connection.onopen = function(evt) {
