@@ -2,6 +2,11 @@ package main
 
 // Command struct defines how commands from players/admin should be formatted
 type Command struct {
-	CommandType string `json:"type"`
-	Command     string `json:"command"`
+	Type  string `json:"type"`
+	Value string `json:"command"`
+}
+
+type ClientInfo struct {
+	Type    string `json:"type"`
+	Message string `json:"message"`
 }

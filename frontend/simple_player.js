@@ -25,7 +25,7 @@ Player.prototype.playerConnect = function() {
         toLog("Client1 already connected!");
     }
     toLog("Connecting as: " + this.name);
-    player = this
+    player = this;
     this.connection = new WebSocket("ws://localhost:8080/ws");
     // noinspection JSUnusedLocalSymbols
     this.connection.onopen = function(evt) {
@@ -36,10 +36,11 @@ Player.prototype.playerConnect = function() {
     // noinspection JSUnusedLocalSymbols
     this.connection.onclose = function(evt) {
         toLog("Websocket Closed");
-        this.connection = null;
+        player.connection = null;
     };
     this.connection.onmessage = function(evt) {
-        toLog(evt);
+        toLog(evt.data);
+        console.log(evt);
     };
     this.connection.onerror = function(evt) {
         toLog("ERROR: " + evt.data);
@@ -76,7 +77,7 @@ function add_player_gui(new_player) {
             <button onclick="pmove('${p_name}','right')"> → </button>
             <button onclick="pmove('${p_name}','down')"> ↓ </button>
             <button onclick="disconnect_player('${p_name}')"> Disconnect </button>
-            <button> Invalid </button>
+            <button onclick="send_invalid('${p_name}')"> Send invalid </button>
         </div>
     `;
 
@@ -99,11 +100,16 @@ function pmove(p_name, command) {
     sendCommand(player,"move", command);
 }
 
+function send_invalid(playerID) {
+    let player = local_players[playerID];
+    sendCommand(player, makeid(), "invalid");
+}
+
 function sendCommand(player,type, command) {
     toLog("Player ("+  player.name + "): " + command);
     let payload = {
-        type: type,
-        command: command,
+        type:  type,
+        value: command,
     };
     player.connection.send(JSON.stringify(payload));
 }

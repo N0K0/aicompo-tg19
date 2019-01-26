@@ -27,8 +27,9 @@ type Status int
 
 // Status enumeration types
 const (
-	Waiting    Status = iota
-	NoUsername Status = iota
+	NoUsername  Status = iota
+	ReadyToPlay Status = iota
+	Waiting     Status = iota
 )
 
 func (player *Player) writeSocket() {
@@ -133,13 +134,58 @@ func (player *Player) parseCommand() {
 			}
 
 			command := Command{}
-			err := json.Unmarshal(incoming, command)
+			err := json.Unmarshal(incoming, &command)
 			if err != nil {
 				log.Printf("Invalid json: %v", err)
 			}
 			log.Printf("Json: %v", command)
+
+			switch command.Type {
+
+			case "username":
+				player.setUsername(&command)
+				break
+			case "move":
+				break
+			default:
+				log.Print("Player sent invalid command")
+				player.sendError("Invalid command type!")
+				break
+			}
 		}
 	}
+}
+
+func (player *Player) sendError(message string) {
+	msg := ClientInfo{
+		Type:    "error",
+		Message: message,
+	}
+
+	jsonString, err := json.Marshal(msg)
+	if err != nil {
+		log.Print("Problems with creating error message")
+	}
+
+	player.qSend <- jsonString
+}
+
+func (player *Player) setUsername(cmd *Command) {
+	username := cmd.Value
+
+	if len(username) > 14 {
+		player.sendError("Username is too long! Max length 14")
+		return
+	}
+
+	if player.status != NoUsername {
+		player.sendError("Username already set!")
+		return
+	}
+
+	player.username = username
+	player.status = ReadyToPlay
+	log.Printf("Player given name: %v", username)
 }
 
 func (player *Player) run() {
