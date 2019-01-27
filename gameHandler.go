@@ -34,6 +34,8 @@ type GameHandler struct {
 	players map[*Player]Player
 	status  gamestate
 
+	gameView *gameViewer
+
 	// Channels
 	timerDeadline *time.Timer
 	timerMinline  *time.Timer

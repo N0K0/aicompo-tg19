@@ -11,6 +11,7 @@ import (
 type Managers struct {
 	gm *GameHandler
 	am *adminHandler
+	vc *gameViewer
 }
 
 var upgrader = websocket.Upgrader{}
@@ -79,6 +80,36 @@ func wsAdminConnector(manager *Managers, w http.ResponseWriter, r *http.Request)
 	}
 }
 
+// wsViewConnector is an connection to get view data
+func wsViewConnector(manager *Managers, w http.ResponseWriter, r *http.Request) {
+	newSocket, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		log.Print("Error setting up new socket connection")
+		return
+	}
+
+	// We don't remake the admin connection just because the browser got lost
+	if manager.vc == nil {
+		log.Print("Creating new gameViewr")
+		manager.vc = &gameViewer{
+			gm:    manager.gm,
+			conn:  newSocket,
+			qRecv: make(chan []byte, 10),
+			qSend: make(chan []byte, 10),
+		}
+
+		manager.gm.gameView = manager.vc
+		go manager.vc.run()
+
+	} else if manager.vc.conn == nil {
+		log.Print("Using old manager, giving it new socket")
+		manager.vc.conn = newSocket
+		// We only need to rerun the sockets
+		go manager.vc.readSocket()
+		go manager.vc.writeSocket()
+	}
+}
+
 func main() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
@@ -87,6 +118,7 @@ func main() {
 
 	m := &Managers{
 		gameHandler,
+		nil,
 		nil,
 	}
 
@@ -98,6 +130,11 @@ func main() {
 	http.HandleFunc("/admin",
 		func(w http.ResponseWriter, r *http.Request) {
 			wsAdminConnector(m, w, r)
+		},
+	)
+	http.HandleFunc("/view",
+		func(w http.ResponseWriter, r *http.Request) {
+			wsViewConnector(m, w, r)
 		},
 	)
 
