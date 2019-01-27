@@ -4,7 +4,7 @@ let local_players = {};
 
 
 function create_player() {
-    new_player = new Player();
+    let new_player = new Player();
     local_players[new_player.name] = new_player;
     add_player_gui(new_player);
 
@@ -25,7 +25,7 @@ Player.prototype.playerConnect = function() {
         toLog("Client1 already connected!");
     }
     toLog("Connecting as: " + this.name);
-    player = this
+    let player = this;
     this.connection = new WebSocket("ws://localhost:8080/ws");
     // noinspection JSUnusedLocalSymbols
     this.connection.onopen = function(evt) {
@@ -63,7 +63,7 @@ Player.prototype.updateUsername = function() {
 };
 
 function add_player_gui(new_player) {
-    p_name = new_player.name;
+    let p_name = new_player.name;
 
     let log = document.getElementById("debug");
     let item = document.createElement("div");
@@ -116,6 +116,7 @@ function sendCommand(player,type, command) {
 
 function makeid() {
     let text = "";
+    // noinspection SpellCheckingInspection
     let possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
   
     for (let i = 0; i < 5; i++)

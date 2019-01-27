@@ -7,6 +7,22 @@ let ctx = canvas.getContext('2d');
 canvas.width = width = parent.offsetWidth;
 canvas.height = height = parent.offsetHeight;
 
+let w = canvas.width;
+let h = canvas.height;
+
+function paint () {
+    ctx.fillStyle = "white";
+    ctx.fillRect(0, 0, w, h);
+    ctx.strokeStyle = "black";
+    ctx.strokeRect(0, 0, w, h);
+}
+
+function paint_cell(x, y, color) {
+    ctx.fillStyle = color;
+    ctx.fillRect(x*cw, y*cw, cw, cw);
+    ctx.strokeStyle = "white";
+    ctx.strokeRect(x*cw, y*cw, cw, cw);
+}
 
 
 // Function to add lines to the log
@@ -29,14 +45,15 @@ function random(min,max) {
   return  Math.floor(Math.random()*(max-min)) + min;
 }
 
+function setup_websocket(){
+
+}
 
 function loop() {
-  ctx.fillStyle = 'rgba(0,0,0,0.25)';
-  ctx.fillRect(0,0,width,height);
+  paint();
 
-  
   requestAnimationFrame(loop);
 }
 
-
+setup_websocket();
 loop();
