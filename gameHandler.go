@@ -47,9 +47,9 @@ type GameHandler struct {
 	adminChan chan string
 
 	// Game info
-	gameNumber  int
-	roundNumber int
-	gameMap     GameMap
+	GameNumber  int
+	RoundNumber int
+	GameMap     GameMap
 
 	mapLock sync.Mutex
 }
@@ -64,9 +64,9 @@ func newGameHandler() *GameHandler {
 		register:      make(chan Player, 10),
 		unregister:    make(chan Player, 10),
 		adminChan:     make(chan string, 10),
-		gameNumber:    0,
-		roundNumber:   0,
-		gameMap:       *baseGameMap(),
+		GameNumber:    0,
+		RoundNumber:   0,
+		GameMap:       baseGameMap(),
 	}
 }
 
@@ -161,6 +161,7 @@ func (g *GameHandler) generateStatusJson() []byte {
 	status := StatusObject{
 		NumPlayers: len(tmpPlayers),
 		Players:    tmpPlayers,
+		GameStatus: *g,
 	}
 
 	bytes, err := json.Marshal(status)

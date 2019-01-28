@@ -27,12 +27,12 @@ const (
 GameMap is a small struct for maps
 */
 type GameMap struct {
-	sizeX   int
-	sizeY   int
-	content [][]int
+	SizeX   int
+	SizeY   int
+	Content [][]int
 }
 
-func baseGameMap() *GameMap {
+func baseGameMap() GameMap {
 	defaultSize := 80
 	blankMap := fmt.Sprintf("%v,%v\n", defaultSize, defaultSize)
 	for i := 1; i < defaultSize; i++ {
@@ -64,11 +64,12 @@ XX____
 ---End---
 
 */
-func mapFromString(mapInput string) *GameMap {
+func mapFromString(mapInput string) GameMap {
 	log.Print("Parsing map")
 	lines := strings.Split(mapInput, "\n")
 	size := strings.Split(lines[0], ",")
 	sizeX, err := strconv.Atoi(size[0])
+
 	if err != nil {
 		log.Fatal("Got invalid map for the X")
 	}
@@ -86,10 +87,10 @@ func mapFromString(mapInput string) *GameMap {
 		log.Fatal("Mismatch between size of X and the size of the first line of the map")
 	}
 
-	gm := &GameMap{
-		sizeX:   0,
-		sizeY:   0,
-		content: nil,
+	gm := GameMap{
+		SizeX:   0,
+		SizeY:   0,
+		Content: nil,
 	}
 
 	content := make([][]int, sizeY)
@@ -118,6 +119,9 @@ func mapFromString(mapInput string) *GameMap {
 
 		content[index] = contentLine
 	}
+	gm.Content = content
+	gm.SizeX = sizeX
+	gm.SizeY = sizeY
 	return gm
 
 }
