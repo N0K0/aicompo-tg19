@@ -32,7 +32,7 @@ const (
 	Waiting     Status = iota
 )
 
-func (player *Player) writeSocket() {
+func (p *Player) writeSocket() {
 	log.Print("Write Socket")
 	ticker := time.NewTicker(pingPeriod)
 	defer func() {
@@ -41,21 +41,21 @@ func (player *Player) writeSocket() {
 	}()
 	for {
 		select {
-		case message, ok := <-player.qSend:
-			err := player.conn.SetWriteDeadline(time.Now().Add(writeWait))
+		case message, ok := <-p.qSend:
+			err := p.conn.SetWriteDeadline(time.Now().Add(writeWait))
 			if err != nil {
 				log.Print("client.conn.SetWriteDeadline")
 			}
 			if !ok {
 				// Client closed connection.
-				err := player.conn.WriteMessage(websocket.CloseMessage, []byte{})
+				err := p.conn.WriteMessage(websocket.CloseMessage, []byte{})
 				if err != nil {
 					log.Print("Client closed connection")
 				}
 				return
 			}
 
-			w, err := player.conn.NextWriter(websocket.TextMessage)
+			w, err := p.conn.NextWriter(websocket.TextMessage)
 			if err != nil {
 				log.Print("client.conn.NextWriter")
 				return
@@ -66,9 +66,9 @@ func (player *Player) writeSocket() {
 			}
 
 			// Add queued chat messages to the current websocket message.
-			n := len(player.qSend)
+			n := len(p.qSend)
 			for i := 0; i < n; i++ {
-				_, err := w.Write(<-player.qSend)
+				_, err := w.Write(<-p.qSend)
 				if err != nil {
 					log.Print("w.Write")
 				}
@@ -78,27 +78,27 @@ func (player *Player) writeSocket() {
 				return
 			}
 		case <-ticker.C:
-			err := player.conn.SetWriteDeadline(time.Now().Add(writeWait))
+			err := p.conn.SetWriteDeadline(time.Now().Add(writeWait))
 			if err != nil {
 				log.Print("client.conn.SetWriteDeadline")
 			}
-			if err := player.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
+			if err := p.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
 				return
 			}
 		}
 	}
 }
 
-func (player *Player) readSocket() {
+func (p *Player) readSocket() {
 	log.Print("Read Socket")
-	player.conn.SetReadLimit(maxMessageSize)
-	err := player.conn.SetReadDeadline(time.Now().Add(pongWait))
+	p.conn.SetReadLimit(maxMessageSize)
+	err := p.conn.SetReadDeadline(time.Now().Add(pongWait))
 	if err != nil {
 		log.Print("client.conn.SetReadDeadline")
 	}
-	player.conn.SetPongHandler(
+	p.conn.SetPongHandler(
 		func(string) error {
-			err := player.conn.SetReadDeadline(time.Now().Add(pongWait))
+			err := p.conn.SetReadDeadline(time.Now().Add(pongWait))
 			if err != nil {
 				log.Print("client.conn.SetReadDeadline")
 			}
@@ -107,26 +107,26 @@ func (player *Player) readSocket() {
 	)
 
 	for {
-		_, message, err := player.conn.ReadMessage()
+		_, message, err := p.conn.ReadMessage()
 		if err != nil {
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure, websocket.CloseNoStatusReceived) {
 				log.Printf("error: %v", err)
 			} else {
-				log.Printf("Client '%s' closed socket at %v ", player.username, player.conn.RemoteAddr())
+				log.Printf("Client '%s' closed socket at %v ", p.Username, p.conn.RemoteAddr())
 			}
-			player.gm.unregister <- player
+			p.gm.unregister <- *p
 			break
 		}
-		player.qRecv <- message
-		log.Printf("Got message %s (queue: %v)", message, len(player.qRecv))
+		p.qRecv <- message
+		log.Printf("Got message %s (queue: %v)", message, len(p.qRecv))
 	}
 }
 
-func (player *Player) parseCommand() {
+func (p *Player) parseCommand() {
 	for {
 		select {
-		case incoming, ok := <-player.qRecv:
-			log.Printf("Queue: %v", len(player.qRecv))
+		case incoming, ok := <-p.qRecv:
+			log.Printf("Queue: %v", len(p.qRecv))
 
 			if !ok {
 				log.Printf("Closed socket")
@@ -143,20 +143,20 @@ func (player *Player) parseCommand() {
 			switch command.Type {
 
 			case "username":
-				player.setUsername(&command)
+				p.setUsername(&command)
 				break
 			case "move":
 				break
 			default:
 				log.Print("Player sent invalid command")
-				player.sendError("Invalid command type!")
+				p.sendError("Invalid command type!")
 				break
 			}
 		}
 	}
 }
 
-func (player *Player) sendError(message string) {
+func (p *Player) sendError(message string) {
 	msg := ClientInfo{
 		Type:    "error",
 		Message: message,
@@ -167,32 +167,32 @@ func (player *Player) sendError(message string) {
 		log.Print("Problems with creating error message")
 	}
 
-	player.qSend <- jsonString
+	p.qSend <- jsonString
 }
 
-func (player *Player) setUsername(cmd *Command) {
+func (p *Player) setUsername(cmd *Command) {
 	username := cmd.Value
 
 	if len(username) > 14 {
-		player.sendError("Username is too long! Max length 14")
+		p.sendError("Username is too long! Max length 14")
 		return
 	}
 
-	if player.status != NoUsername {
-		player.sendError("Username already set!")
+	if p.status != NoUsername {
+		p.sendError("Username already set!")
 		return
 	}
 
-	player.username = username
-	player.status = ReadyToPlay
+	p.Username = username
+	p.status = ReadyToPlay
 	log.Printf("Player given name: %v", username)
 }
 
-func (player *Player) run() {
+func (p *Player) run() {
 
 	// Routines used to interact with the WebSocket
 	// I'm keeping is separated from the logic below to make everything a bit more clean
-	go player.writeSocket()
-	go player.readSocket()
-	go player.parseCommand()
+	go p.writeSocket()
+	go p.readSocket()
+	go p.parseCommand()
 }
