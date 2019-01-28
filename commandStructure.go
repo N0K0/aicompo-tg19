@@ -10,3 +10,8 @@ type ClientInfo struct {
 	Type    string `json:"type"`
 	Message string `json:"message"`
 }
+
+type StatusObject struct {
+	NumPlayers int
+	Players    map[string]Player
+}

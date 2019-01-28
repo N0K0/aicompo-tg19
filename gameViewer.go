@@ -7,6 +7,8 @@ import (
 	"github.com/gorilla/websocket"
 )
 
+const ()
+
 type gameViewer struct {
 	conn *websocket.Conn
 
@@ -15,18 +17,29 @@ type gameViewer struct {
 	qSend chan []byte
 	qRecv chan []byte
 
-	ticker *time.Ticker
+	statusTicker *time.Ticker
+	pingTicker   *time.Ticker
 }
 
 func (gv *gameViewer) writeSocket() {
-	log.Print("Write Socket")
-	gv.ticker = time.NewTicker(pingPeriod)
+
+	statusFreq := (1000 / 10) * time.Millisecond
+
+	log.Printf("Update time: %v", statusFreq)
+	gv.pingTicker = time.NewTicker(pingPeriod)
+	gv.statusTicker = time.NewTicker(statusFreq)
 	defer func() {
-		gv.ticker.Stop()
+		gv.pingTicker.Stop()
+		gv.statusTicker.Stop()
 	}()
 	for {
 		select {
 		case message, ok := <-gv.qSend:
+
+			if gv.conn == nil {
+				log.Printf("No more connection, can not print")
+				return
+			}
 			err := gv.conn.SetWriteDeadline(time.Now().Add(writeWait))
 			if err != nil {
 				log.Print("SetWrDeadline err")
@@ -63,7 +76,7 @@ func (gv *gameViewer) writeSocket() {
 			if err := w.Close(); err != nil {
 				return
 			}
-		case <-gv.ticker.C:
+		case <-gv.pingTicker.C:
 			err := gv.conn.SetWriteDeadline(time.Now().Add(writeWait))
 			if err != nil {
 				log.Print("Error set deadline Ticker")
@@ -71,6 +84,15 @@ func (gv *gameViewer) writeSocket() {
 			if err := gv.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
 				return
 			}
+		case <-gv.statusTicker.C:
+			// Time to update the status
+			gv.gm.mapLock.Lock()
+			if gv.conn == nil {
+				gv.statusTicker.Stop()
+			}
+			gv.qSend <- gv.gm.generateStatusJson()
+			gv.gm.mapLock.Unlock()
+
 		}
 	}
 }
@@ -100,7 +122,7 @@ func (gv *gameViewer) readSocket() {
 			} else {
 				log.Printf("GameViewer closed socket at %v ", gv.conn.RemoteAddr())
 				gv.conn = nil
-				gv.ticker.Stop()
+				gv.pingTicker.Stop()
 			}
 			break
 		}
@@ -110,8 +132,6 @@ func (gv *gameViewer) readSocket() {
 }
 
 func (gv *gameViewer) run() {
-	log.Printf("Gameviewer started")
-
 	go gv.readSocket()
 	go gv.writeSocket()
 

@@ -35,17 +35,17 @@ func wsConnector(manager *Managers, w http.ResponseWriter, r *http.Request) {
 
 	log.Printf("New socket: %v", &newSocket)
 
-	manager.gm.register <- &Player{
+	manager.gm.register <- Player{
 		conn:      newSocket,
-		username:  "No username",
+		Username:  "No Username",
 		status:    NoUsername,
-		command:   "",
+		Command:   "",
 		qSend:     make(chan []byte, 10),
 		qRecv:     make(chan []byte, 10),
 		gm:        manager.gm,
 		turnsLost: 0,
-		posX:      make([]int, 0),
-		posY:      make([]int, 0),
+		PosX:      make([]int, 0),
+		PosY:      make([]int, 0),
 		size:      0,
 	}
 

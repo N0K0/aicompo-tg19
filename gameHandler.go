@@ -1,7 +1,9 @@
 package main
 
 import (
+	"encoding/json"
 	"log"
+	"sync"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -39,8 +41,8 @@ type GameHandler struct {
 	// Channels
 	timerDeadline *time.Timer
 	timerMinline  *time.Timer
-	register      chan *Player
-	unregister    chan *Player
+	register      chan Player
+	unregister    chan Player
 
 	adminChan chan string
 
@@ -48,6 +50,8 @@ type GameHandler struct {
 	gameNumber  int
 	roundNumber int
 	gameMap     GameMap
+
+	mapLock sync.Mutex
 }
 
 func newGameHandler() *GameHandler {
@@ -57,8 +61,8 @@ func newGameHandler() *GameHandler {
 		status:        pregame,
 		timerDeadline: time.NewTimer(turnTimeMax),
 		timerMinline:  time.NewTimer(turnTimeMin),
-		register:      make(chan *Player, 10),
-		unregister:    make(chan *Player, 10),
+		register:      make(chan Player, 10),
+		unregister:    make(chan Player, 10),
 		adminChan:     make(chan string, 10),
 		gameNumber:    0,
 		roundNumber:   0,
@@ -73,12 +77,12 @@ func (g *GameHandler) run() {
 	for {
 		select {
 		case player := <-g.register:
-			g.players[player] = *player
+			g.players[&player] = player
 			log.Printf("Players: %v", len(g.players))
 			go player.run()
 		case player := <-g.unregister:
 			log.Printf("Unregistering %v", player)
-			delete(g.players, player)
+			delete(g.players, &player)
 			close(player.qRecv)
 			close(player.qSend)
 			err := player.conn.Close()
@@ -137,6 +141,36 @@ func (g *GameHandler) newTurn() {
 // execTurn resets
 func (g *GameHandler) execTurn() {
 	// Run trough all the clients in an order (which?)
+	g.mapLock.Lock()
+	g.mapLock.Unlock()
+}
+
+// Things we need:
+//	Players
+//	Scores
+//	Turn
+//	Round
+
+func (g *GameHandler) generateStatusJson() []byte {
+	tmpPlayers := make(map[string]Player)
+
+	for k := range g.players {
+		tmpPlayers[k.Username] = *k
+	}
+
+	status := StatusObject{
+		NumPlayers: len(tmpPlayers),
+		Players:    tmpPlayers,
+	}
+
+	bytes, err := json.Marshal(status)
+	if err != nil {
+		log.Printf("Unable to marshal json")
+	}
+
+	log.Printf("%s", bytes)
+
+	return bytes
 
 }
 
@@ -146,14 +180,14 @@ type Player struct {
 	// The websocket to the client
 	conn *websocket.Conn
 
-	// The username of the client
-	username string
+	// The Username of the client
+	Username string `json:"username"`
 
 	// The status of the connection
 	status Status
 
 	// Last command read
-	command string
+	Command string `json:"command"`
 
 	// Channels for caching data
 	qSend chan []byte
@@ -164,7 +198,7 @@ type Player struct {
 
 	// GameData
 	// X,Y is two lists which when zipped creates the coordinates of the snake
-	posX []int
-	posY []int
+	PosX []int
+	PosY []int
 	size int
 }
