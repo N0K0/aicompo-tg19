@@ -10,6 +10,8 @@ canvas.height = height = parent.offsetHeight;
 let w = canvas.width;
 let h = canvas.height;
 
+let viewer = new Viewer();
+
 function paint () {
     ctx.fillStyle = "white";
     ctx.fillRect(0, 0, w, h);
@@ -45,9 +47,6 @@ function random(min,max) {
   return  Math.floor(Math.random()*(max-min)) + min;
 }
 
-function setup_websocket(){
-
-}
 
 function loop() {
   paint();
@@ -55,5 +54,5 @@ function loop() {
   requestAnimationFrame(loop);
 }
 
-setup_websocket();
+viewer.viewConnect();
 loop();
