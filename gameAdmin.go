@@ -21,7 +21,7 @@ type adminHandler struct {
 
 func (admin *adminHandler) run() {
 	log.Printf("Admin loop started")
-	log.Printf("Game state: %v", admin.gm.status)
+	log.Printf("Game state: %v", admin.gm.Status)
 
 	go admin.readSocket()
 	go admin.writeSocket()
