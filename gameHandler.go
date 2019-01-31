@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"log"
 	"sync"
 	"time"
@@ -29,12 +30,25 @@ const (
 	done    gamestate = iota
 )
 
+func (gs gamestate) MarshalText() (text []byte, err error) {
+	switch gs {
+	case pregame:
+		return []byte("pregame"), nil
+	case running:
+		return []byte("running"), nil
+	case done:
+		return []byte("done"), nil
+	default:
+		return []byte(""), errors.New("game state invalid")
+	}
+}
+
 // GameHandler takes care of the general logic connected to running the game.
 // It looks for all the commands that has been sent in from the different players.
 type GameHandler struct {
 	// Meta info
 	players map[*Player]Player
-	status  gamestate
+	Status  gamestate
 
 	gameView *gameViewer
 
@@ -58,7 +72,7 @@ func newGameHandler() *GameHandler {
 	log.Print("New GameHandler")
 	return &GameHandler{
 		players:       make(map[*Player]Player),
-		status:        pregame,
+		Status:        pregame,
 		timerDeadline: time.NewTimer(turnTimeMax),
 		timerMinline:  time.NewTimer(turnTimeMin),
 		register:      make(chan Player, 10),
@@ -95,7 +109,7 @@ func (g *GameHandler) run() {
 
 func (g *GameHandler) gameState() {
 	for {
-		switch g.status {
+		switch g.Status {
 		case pregame:
 			break
 		case running:
@@ -152,6 +166,8 @@ func (g *GameHandler) execTurn() {
 //	Round
 
 func (g *GameHandler) generateStatusJson() []byte {
+	log.Printf("Generating state")
+	defer log.Printf("Generating Done")
 	tmpPlayers := make(map[string]Player)
 
 	for k := range g.players {
@@ -164,12 +180,13 @@ func (g *GameHandler) generateStatusJson() []byte {
 		GameStatus: *g,
 	}
 
+	log.Printf("Marshal")
 	bytes, err := json.Marshal(status)
 	if err != nil {
 		log.Printf("Unable to marshal json")
+		panic("Unable to marshal json")
 	}
-
-	log.Printf("%s", bytes)
+	log.Printf("Marshal Done")
 
 	return bytes
 
