@@ -3,6 +3,9 @@ package main
 import (
 	"log"
 	"net/http"
+	"runtime"
+	"runtime/debug"
+	_ "runtime/pprof"
 
 	"github.com/gorilla/websocket"
 )
@@ -111,6 +114,11 @@ func wsViewConnector(manager *Managers, w http.ResponseWriter, r *http.Request) 
 }
 
 func main() {
+	runtime.GOMAXPROCS(32)
+	debug.SetGCPercent(99)
+	debug.SetMaxStack(100000)
+	debug.SetMaxThreads(10000)
+
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
 	gameHandler := newGameHandler()
