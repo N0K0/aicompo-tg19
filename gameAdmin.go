@@ -2,9 +2,9 @@ package main
 
 import (
 	"encoding/json"
-	"log"
 	"time"
 
+	"github.com/google/logger"
 	"github.com/gorilla/websocket"
 )
 
@@ -20,25 +20,25 @@ type adminHandler struct {
 }
 
 func (admin *adminHandler) run() {
-	log.Printf("Admin loop started")
-	log.Printf("Game state: %v", admin.gm.Status)
+	logger.Infof("Admin loop started")
+	logger.Infof("Game state: %v", admin.gm.Status)
 
 	go admin.readSocket()
 	go admin.writeSocket()
 
-	logger := time.NewTicker(10 * time.Second)
+	loggerTicker := time.NewTicker(10 * time.Second)
 	for {
 		select {
 		case incoming := <-admin.qRecv:
-			log.Printf("New admin message: %s", incoming)
+			logger.Infof("New admin message: %s", incoming)
 			adminParseCommand(incoming)
 			break
-		case <-logger.C:
+		case <-loggerTicker.C:
 			admin.logStatus()
 			break
 		default:
-			//log.Print("Admin loop")
-			//time.Sleep(1 * time.Second)
+			logger.Info("Admin loop")
+			time.Sleep(1 * time.Second)
 		}
 	}
 }
@@ -48,7 +48,7 @@ func adminParseCommand(jsonObj []byte) {
 	err := json.Unmarshal(jsonObj, &c)
 
 	if err != nil {
-		log.Printf("Problem with admin command %v: %v", c, err)
+		logger.Infof("Problem with admin command %v: %v", c, err)
 	}
 
 }
@@ -58,11 +58,11 @@ func (admin *adminHandler) logStatus() {
 		Connected Players: %v
 	`
 	numPlayers := len(admin.gm.players)
-	log.Printf(statusString, numPlayers)
+	logger.Infof(statusString, numPlayers)
 }
 
 func (admin *adminHandler) writeSocket() {
-	log.Print("Write Socket")
+	logger.Info("Write Socket")
 	admin.ticker = time.NewTicker(pingPeriod)
 	defer func() {
 		admin.ticker.Stop()
@@ -72,26 +72,26 @@ func (admin *adminHandler) writeSocket() {
 		case message, ok := <-admin.qSend:
 			err := admin.conn.SetWriteDeadline(time.Now().Add(writeWait))
 			if err != nil {
-				log.Print("SetWrDeadline err")
+				logger.Info("SetWrDeadline err")
 			}
 
 			if !ok {
 				// The hub closed the channel.
 				err := admin.conn.WriteMessage(websocket.CloseMessage, []byte{})
 				if err != nil {
-					log.Print("WriteMessage err")
+					logger.Info("WriteMessage err")
 				}
 				return
 			}
 
 			w, err := admin.conn.NextWriter(websocket.TextMessage)
 			if err != nil {
-				log.Print("Error with NextWriter")
+				logger.Info("Error with NextWriter")
 				return
 			}
 			_, err = w.Write(message)
 			if err != nil {
-				log.Print("Error write")
+				logger.Info("Error write")
 			}
 
 			// Add queued chat messages to the current websocket message.
@@ -99,7 +99,7 @@ func (admin *adminHandler) writeSocket() {
 			for i := 0; i < n; i++ {
 				_, err := w.Write(<-admin.qSend)
 				if err != nil {
-					log.Print("Error write")
+					logger.Info("Error write")
 				}
 			}
 
@@ -109,7 +109,7 @@ func (admin *adminHandler) writeSocket() {
 		case <-admin.ticker.C:
 			err := admin.conn.SetWriteDeadline(time.Now().Add(writeWait))
 			if err != nil {
-				log.Print("Error set deadline Ticker")
+				logger.Info("Error set deadline Ticker")
 			}
 			if err := admin.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
 				return
@@ -119,17 +119,17 @@ func (admin *adminHandler) writeSocket() {
 }
 
 func (admin *adminHandler) readSocket() {
-	log.Print("Admin Read Socket")
+	logger.Info("Admin Read Socket")
 	admin.conn.SetReadLimit(maxMessageSize)
 	err := admin.conn.SetReadDeadline(time.Now().Add(pongWait))
 	if err != nil {
-		log.Print("Err set read Deadline")
+		logger.Info("Err set read Deadline")
 	}
 	admin.conn.SetPongHandler(
 		func(string) error {
 			err := admin.conn.SetReadDeadline(time.Now().Add(pongWait))
 			if err != nil {
-				log.Printf("Err set deadline pong")
+				logger.Infof("Err set deadline pong")
 			}
 			return nil
 		},
@@ -139,16 +139,16 @@ func (admin *adminHandler) readSocket() {
 		_, message, err := admin.conn.ReadMessage()
 		if err != nil {
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure, websocket.CloseNoStatusReceived) {
-				log.Printf("IsUnexpectedCloseError admin: %v", err)
+				logger.Infof("IsUnexpectedCloseError admin: %v", err)
 			} else {
 				// Admin disconnected
-				log.Printf("Admin closed socket at %v ", admin.conn.RemoteAddr())
+				logger.Infof("Admin closed socket at %v ", admin.conn.RemoteAddr())
 				admin.conn = nil
 				admin.ticker.Stop()
 			}
 			break
 		}
-		log.Print("Waiting for admin message")
+		logger.Info("Waiting for admin message")
 		admin.qRecv <- message
 	}
 }

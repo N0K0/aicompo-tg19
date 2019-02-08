@@ -5,6 +5,8 @@ import (
 	"log"
 	"strconv"
 	"strings"
+
+	"github.com/google/logger"
 )
 
 type blockstatus int
@@ -65,7 +67,7 @@ XX____
 
 */
 func mapFromString(mapInput string) GameMap {
-	log.Print("Parsing map")
+	logger.Info("Parsing map")
 	lines := strings.Split(mapInput, "\n")
 	size := strings.Split(lines[0], ",")
 	sizeX, err := strconv.Atoi(size[0])

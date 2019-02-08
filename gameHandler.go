@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/google/logger"
 	"github.com/gorilla/websocket"
 )
 
@@ -69,7 +70,7 @@ type GameHandler struct {
 }
 
 func newGameHandler() *GameHandler {
-	log.Print("New GameHandler")
+	logger.Info("New GameHandler")
 	return &GameHandler{
 		players:       make(map[*Player]Player),
 		Status:        pregame,
@@ -85,23 +86,23 @@ func newGameHandler() *GameHandler {
 }
 
 func (g *GameHandler) run() {
-	log.Print("GameHandler started")
+	logger.Info("GameHandler started")
 	defer log.Panic("GameHandler Stopped")
 	go g.gameState()
 	for {
 		select {
 		case player := <-g.register:
 			g.players[&player] = player
-			log.Printf("Players: %v", len(g.players))
+			logger.Infof("Players: %v", len(g.players))
 			go player.run()
 		case player := <-g.unregister:
-			log.Printf("Unregistering %v", player)
+			logger.Infof("Unregistering %v", player)
 			delete(g.players, &player)
 			close(player.qRecv)
 			close(player.qSend)
 			err := player.conn.Close()
 			if err != nil {
-				log.Print("Problems closing websocket")
+				logger.Info("Problems closing websocket")
 			}
 		}
 	}
@@ -134,7 +135,7 @@ func (g *GameHandler) running() {
 			// Exec regardless if all is done
 			break
 		default:
-			log.Print("GameHandler")
+			logger.Info("GameHandler")
 			time.Sleep(1 * time.Second)
 		}
 	}
@@ -166,8 +167,8 @@ func (g *GameHandler) execTurn() {
 //	Round
 
 func (g *GameHandler) generateStatusJson() []byte {
-	log.Printf("Generating state")
-	defer log.Printf("Generating Done")
+	logger.Infof("Generating state")
+	//defer logger.Infof("Generating Done")
 	tmpPlayers := make(map[string]Player)
 
 	for k := range g.players {
@@ -176,17 +177,17 @@ func (g *GameHandler) generateStatusJson() []byte {
 
 	status := StatusObject{
 		NumPlayers: len(tmpPlayers),
-		Players:    tmpPlayers,
-		GameStatus: *g,
+		//Players:    tmpPlayers,
+		//GameStatus: *g,
 	}
 
-	log.Printf("Marshal")
+	logger.Infof("Marshal")
 	bytes, err := json.Marshal(status)
 	if err != nil {
-		log.Printf("Unable to marshal json")
+		logger.Infof("Unable to marshal json")
 		panic("Unable to marshal json")
 	}
-	log.Printf("Marshal Done")
+	logger.Infof("Marshal Done")
 
 	return bytes
 
@@ -211,8 +212,8 @@ type Player struct {
 	qSend chan []byte
 	qRecv chan []byte
 	// Logic data
-	gm        *GameHandler
-	turnsLost int
+	turnsLost    int
+	gmUnregister chan Player
 
 	// GameData
 	// X,Y is two lists which when zipped creates the coordinates of the snake

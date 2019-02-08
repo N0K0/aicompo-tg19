@@ -1,13 +1,11 @@
 package main
 
 import (
-	"log"
 	"time"
 
+	"github.com/google/logger"
 	"github.com/gorilla/websocket"
 )
-
-const ()
 
 type gameViewer struct {
 	conn *websocket.Conn
@@ -23,9 +21,9 @@ type gameViewer struct {
 
 func (gv *gameViewer) writeSocket() {
 
-	statusFreq := (1000 / 10) * time.Millisecond
+	statusFreq := (100 / 10) * time.Millisecond
 
-	log.Printf("Update time: %v", statusFreq)
+	logger.Infof("Update time: %v", statusFreq)
 	gv.pingTicker = time.NewTicker(pingPeriod)
 	gv.statusTicker = time.NewTicker(statusFreq)
 	defer func() {
@@ -37,31 +35,31 @@ func (gv *gameViewer) writeSocket() {
 		case message, ok := <-gv.qSend:
 
 			if gv.conn == nil {
-				log.Printf("No more connection, can not print")
+				logger.Infof("No more connection, can not print")
 				return
 			}
 			err := gv.conn.SetWriteDeadline(time.Now().Add(writeWait))
 			if err != nil {
-				log.Print("SetWrDeadline err")
+				logger.Info("SetWrDeadline err")
 			}
 
 			if !ok {
 				// The hub closed the channel.
 				err := gv.conn.WriteMessage(websocket.CloseMessage, []byte{})
 				if err != nil {
-					log.Print("WriteMessage err")
+					logger.Info("WriteMessage err")
 				}
 				return
 			}
 
 			w, err := gv.conn.NextWriter(websocket.TextMessage)
 			if err != nil {
-				log.Print("Error with NextWriter")
+				logger.Info("Error with NextWriter")
 				return
 			}
 			_, err = w.Write(message)
 			if err != nil {
-				log.Print("Error write")
+				logger.Info("Error write")
 			}
 
 			// Add queued chat messages to the current websocket message.
@@ -69,7 +67,7 @@ func (gv *gameViewer) writeSocket() {
 			for i := 0; i < n; i++ {
 				_, err := w.Write(<-gv.qSend)
 				if err != nil {
-					log.Print("Error write")
+					logger.Info("Error write")
 				}
 			}
 
@@ -79,7 +77,7 @@ func (gv *gameViewer) writeSocket() {
 		case <-gv.pingTicker.C:
 			err := gv.conn.SetWriteDeadline(time.Now().Add(writeWait))
 			if err != nil {
-				log.Print("Error set deadline Ticker")
+				logger.Info("Error set deadline Ticker")
 			}
 			if err := gv.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
 				return
@@ -98,17 +96,17 @@ func (gv *gameViewer) writeSocket() {
 }
 
 func (gv *gameViewer) readSocket() {
-	log.Print("GameViewer Read Socket")
+	logger.Info("GameViewer Read Socket")
 	gv.conn.SetReadLimit(maxMessageSize)
 	err := gv.conn.SetReadDeadline(time.Now().Add(pongWait))
 	if err != nil {
-		log.Print("Err set read Deadline")
+		logger.Info("Err set read Deadline")
 	}
 	gv.conn.SetPongHandler(
 		func(string) error {
 			err := gv.conn.SetReadDeadline(time.Now().Add(pongWait))
 			if err != nil {
-				log.Printf("Err set deadline pong")
+				logger.Infof("Err set deadline pong")
 			}
 			return nil
 		},
@@ -118,15 +116,15 @@ func (gv *gameViewer) readSocket() {
 		_, message, err := gv.conn.ReadMessage()
 		if err != nil {
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure, websocket.CloseNoStatusReceived) {
-				log.Printf("IsUnexpectedCloseError GameViewer: %v", err)
+				logger.Infof("IsUnexpectedCloseError GameViewer: %v", err)
 			} else {
-				log.Printf("GameViewer closed socket at %v ", gv.conn.RemoteAddr())
+				logger.Infof("GameViewer closed socket at %v ", gv.conn.RemoteAddr())
 				gv.conn = nil
 				gv.pingTicker.Stop()
 			}
 			break
 		}
-		log.Print("Waiting for GameViewer message")
+		logger.Info("Waiting for GameViewer message")
 		gv.qRecv <- message
 	}
 }

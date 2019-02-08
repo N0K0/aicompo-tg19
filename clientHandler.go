@@ -2,9 +2,9 @@ package main
 
 import (
 	"encoding/json"
-	"log"
 	"time"
 
+	"github.com/google/logger"
 	"github.com/gorilla/websocket"
 )
 
@@ -33,10 +33,10 @@ const (
 )
 
 func (p *Player) writeSocket() {
-	log.Print("Write Socket")
+	logger.Info("Write Socket")
 	ticker := time.NewTicker(pingPeriod)
 	defer func() {
-		log.Print("Player dead")
+		logger.Info("Player dead")
 		ticker.Stop()
 	}()
 	for {
@@ -44,25 +44,25 @@ func (p *Player) writeSocket() {
 		case message, ok := <-p.qSend:
 			err := p.conn.SetWriteDeadline(time.Now().Add(writeWait))
 			if err != nil {
-				log.Print("client.conn.SetWriteDeadline")
+				logger.Info("client.conn.SetWriteDeadline")
 			}
 			if !ok {
 				// Client closed connection.
 				err := p.conn.WriteMessage(websocket.CloseMessage, []byte{})
 				if err != nil {
-					log.Print("Client closed connection")
+					logger.Info("Client closed connection")
 				}
 				return
 			}
 
 			w, err := p.conn.NextWriter(websocket.TextMessage)
 			if err != nil {
-				log.Print("client.conn.NextWriter")
+				logger.Info("client.conn.NextWriter")
 				return
 			}
 			_, err = w.Write(message)
 			if err != nil {
-				log.Print("w.Write")
+				logger.Info("w.Write")
 			}
 
 			// Add queued chat messages to the current websocket message.
@@ -70,7 +70,7 @@ func (p *Player) writeSocket() {
 			for i := 0; i < n; i++ {
 				_, err := w.Write(<-p.qSend)
 				if err != nil {
-					log.Print("w.Write")
+					logger.Info("w.Write")
 				}
 			}
 
@@ -80,7 +80,7 @@ func (p *Player) writeSocket() {
 		case <-ticker.C:
 			err := p.conn.SetWriteDeadline(time.Now().Add(writeWait))
 			if err != nil {
-				log.Print("client.conn.SetWriteDeadline")
+				logger.Info("client.conn.SetWriteDeadline")
 			}
 			if err := p.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
 				return
@@ -90,17 +90,17 @@ func (p *Player) writeSocket() {
 }
 
 func (p *Player) readSocket() {
-	log.Print("Read Socket")
+	logger.Info("Read Socket")
 	p.conn.SetReadLimit(maxMessageSize)
 	err := p.conn.SetReadDeadline(time.Now().Add(pongWait))
 	if err != nil {
-		log.Print("client.conn.SetReadDeadline")
+		logger.Info("client.conn.SetReadDeadline")
 	}
 	p.conn.SetPongHandler(
 		func(string) error {
 			err := p.conn.SetReadDeadline(time.Now().Add(pongWait))
 			if err != nil {
-				log.Print("client.conn.SetReadDeadline")
+				logger.Info("client.conn.SetReadDeadline")
 			}
 			return nil
 		},
@@ -110,15 +110,15 @@ func (p *Player) readSocket() {
 		_, message, err := p.conn.ReadMessage()
 		if err != nil {
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure, websocket.CloseNoStatusReceived) {
-				log.Printf("error: %v", err)
+				logger.Infof("error: %v", err)
 			} else {
-				log.Printf("Client '%s' closed socket at %v ", p.Username, p.conn.RemoteAddr())
+				logger.Infof("Client '%s' closed socket at %v ", p.Username, p.conn.RemoteAddr())
 			}
-			p.gm.unregister <- *p
+			p.gmUnregister <- *p
 			break
 		}
 		p.qRecv <- message
-		log.Printf("Got message %s (queue: %v)", message, len(p.qRecv))
+		logger.Infof("Got message %s (queue: %v)", message, len(p.qRecv))
 	}
 }
 
@@ -126,19 +126,19 @@ func (p *Player) parseCommand() {
 	for {
 		select {
 		case incoming, ok := <-p.qRecv:
-			log.Printf("Queue: %v", len(p.qRecv))
+			logger.Infof("Queue: %v", len(p.qRecv))
 
 			if !ok {
-				log.Printf("Closed socket")
+				logger.Infof("Closed socket")
 				return
 			}
 
 			command := Command{}
 			err := json.Unmarshal(incoming, &command)
 			if err != nil {
-				log.Printf("Invalid json: %v", err)
+				logger.Infof("Invalid json: %v", err)
 			}
-			log.Printf("Json: %v", command)
+			logger.Infof("Json: %v", command)
 
 			switch command.Type {
 
@@ -148,7 +148,7 @@ func (p *Player) parseCommand() {
 			case "move":
 				break
 			default:
-				log.Print("Player sent invalid command")
+				logger.Info("Player sent invalid command")
 				p.sendError("Invalid command type!")
 				break
 			}
@@ -164,7 +164,7 @@ func (p *Player) sendError(message string) {
 
 	jsonString, err := json.Marshal(msg)
 	if err != nil {
-		log.Print("Problems with creating error message")
+		logger.Info("Problems with creating error message")
 	}
 
 	p.qSend <- jsonString
@@ -185,7 +185,7 @@ func (p *Player) setUsername(cmd *Command) {
 
 	p.Username = username
 	p.status = ReadyToPlay
-	log.Printf("Player given name: %v", username)
+	logger.Infof("Player given name: %v", username)
 }
 
 func (p *Player) run() {
