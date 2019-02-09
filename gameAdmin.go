@@ -4,8 +4,9 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/google/logger"
 	"github.com/gorilla/websocket"
+
+	"github.com/google/logger"
 )
 
 // adminHandler takes care of starting the game and is used for spectating the events. Used by the web interface
@@ -28,6 +29,7 @@ func (admin *adminHandler) run() {
 
 	loggerTicker := time.NewTicker(10 * time.Second)
 	for {
+		time.Sleep(1 * time.Millisecond)
 		select {
 		case incoming := <-admin.qRecv:
 			logger.Infof("New admin message: %s", incoming)
@@ -36,9 +38,6 @@ func (admin *adminHandler) run() {
 		case <-loggerTicker.C:
 			admin.logStatus()
 			break
-		default:
-			logger.Info("Admin loop")
-			time.Sleep(1 * time.Second)
 		}
 	}
 }
@@ -107,6 +106,7 @@ func (admin *adminHandler) writeSocket() {
 				return
 			}
 		case <-admin.ticker.C:
+			logger.Info("Admin ping ticker")
 			err := admin.conn.SetWriteDeadline(time.Now().Add(writeWait))
 			if err != nil {
 				logger.Info("Error set deadline Ticker")
@@ -120,7 +120,6 @@ func (admin *adminHandler) writeSocket() {
 
 func (admin *adminHandler) readSocket() {
 	logger.Info("Admin Read Socket")
-	admin.conn.SetReadLimit(maxMessageSize)
 	err := admin.conn.SetReadDeadline(time.Now().Add(pongWait))
 	if err != nil {
 		logger.Info("Err set read Deadline")

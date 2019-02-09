@@ -1,7 +1,6 @@
 package main
 
 import (
-	"log"
 	"net/http"
 	"os"
 	_ "runtime/pprof"
@@ -17,29 +16,29 @@ type Managers struct {
 	vc *gameViewer
 }
 
-var upgrader = websocket.Upgrader{}
+var wsUpgrader = websocket.Upgrader{}
+var adminUpgrader = websocket.Upgrader{}
+var viewUpgrader = websocket.Upgrader{}
 
 func wsConnector(manager *Managers, w http.ResponseWriter, r *http.Request) {
-	newSocket, err := upgrader.Upgrade(w, r, nil)
+	ws, err := wsUpgrader.Upgrade(w, r, nil)
 	if err != nil {
 		logger.Info("Error setting up new socket connection")
 		return
 	}
 
-	if len(manager.gm.players) >= 16 {
+	/*	if len(manager.gm.players) >= 16 {
 		logger.Info("Unable to add more players")
 
-		err = newSocket.Close()
+		err := ws.Close()
 		if err != nil {
 			logger.Info("Unable to close new socket")
 		}
 		return
-	}
+	}*/
 
-	logger.Infof("New socket: %v", &newSocket)
-
-	manager.gm.register <- Player{
-		conn:         newSocket,
+	manager.gm.register <- &Player{
+		conn:         ws,
 		Username:     "No Username",
 		status:       NoUsername,
 		Command:      "",
@@ -52,12 +51,12 @@ func wsConnector(manager *Managers, w http.ResponseWriter, r *http.Request) {
 		size:         0,
 	}
 
-	logger.Infof("New socket from %v", newSocket.RemoteAddr())
+	logger.Infof("New socket from %v", ws.RemoteAddr())
 }
 
 // wsAdminConnector is used by admins to control the game
 func wsAdminConnector(manager *Managers, w http.ResponseWriter, r *http.Request) {
-	newSocket, err := upgrader.Upgrade(w, r, nil)
+	ws, err := adminUpgrader.Upgrade(w, r, nil)
 	if err != nil {
 		logger.Info("Error setting up new socket connection")
 		return
@@ -68,15 +67,15 @@ func wsAdminConnector(manager *Managers, w http.ResponseWriter, r *http.Request)
 		logger.Info("Creating new adminmanager")
 		manager.am = &adminHandler{
 			gm:    manager.gm,
-			conn:  newSocket,
+			conn:  ws,
 			qRecv: make(chan []byte, 10),
 			qSend: make(chan []byte, 10),
 		}
 		go manager.am.run()
 
-	} else if manager.am.conn == nil {
+	} else if &manager.am.conn == nil {
 		logger.Info("Using old manager, giving it new socket")
-		manager.am.conn = newSocket
+		manager.am.conn = ws
 		// We only need to rerun the sockets
 		go manager.am.readSocket()
 		go manager.am.writeSocket()
@@ -85,7 +84,7 @@ func wsAdminConnector(manager *Managers, w http.ResponseWriter, r *http.Request)
 
 // wsViewConnector is an connection to get view data
 func wsViewConnector(manager *Managers, w http.ResponseWriter, r *http.Request) {
-	newSocket, err := upgrader.Upgrade(w, r, nil)
+	ws, err := viewUpgrader.Upgrade(w, r, nil)
 	if err != nil {
 		logger.Info("Error setting up new socket connection")
 		return
@@ -93,12 +92,14 @@ func wsViewConnector(manager *Managers, w http.ResponseWriter, r *http.Request) 
 
 	// We don't remake the admin connection just because the browser got lost
 	if manager.vc == nil {
-		logger.Info("Creating new gameViewr")
+		logger.Info("Creating new gameViewer")
 		manager.vc = &gameViewer{
-			gm:    manager.gm,
-			conn:  newSocket,
-			qRecv: make(chan []byte, 10),
-			qSend: make(chan []byte, 10),
+			conn:         ws,
+			gm:           manager.gm,
+			qSend:        make(chan []byte, 1),
+			qRecv:        make(chan []byte, 1),
+			statusTicker: nil,
+			pingTicker:   nil,
 		}
 
 		manager.gm.gameView = manager.vc
@@ -106,17 +107,20 @@ func wsViewConnector(manager *Managers, w http.ResponseWriter, r *http.Request) 
 
 	} else if manager.vc.conn == nil {
 		logger.Info("Using old manager, giving it new socket")
-		manager.vc.conn = newSocket
+		manager.vc.conn = ws
 		// We only need to rerun the sockets
-		go manager.vc.readSocket()
-		go manager.vc.writeSocket()
+		go manager.vc.readPump()
+		go manager.vc.writePump()
+		go manager.vc.statusUpdater()
 	}
 }
 
 func main() {
-	logger.Init("aiCompo", true, false, os.Stdout)
+	// newMem := profile.MemProfileRate(512)
+	// defer profile.Start(newMem).Stop()
+
+	logger.Init("aiCompo", false, false, os.Stderr)
 	gameHandler := newGameHandler()
-	go gameHandler.run()
 
 	m := &Managers{
 		gameHandler,
@@ -124,23 +128,21 @@ func main() {
 		nil,
 	}
 
-	http.HandleFunc("/ws",
-		func(w http.ResponseWriter, r *http.Request) {
-			wsConnector(m, w, r)
-		},
-	)
-	http.HandleFunc("/admin",
-		func(w http.ResponseWriter, r *http.Request) {
-			wsAdminConnector(m, w, r)
-		},
-	)
-	http.HandleFunc("/view",
-		func(w http.ResponseWriter, r *http.Request) {
-			wsViewConnector(m, w, r)
-		},
-	)
+	go gameHandler.run()
+
+	http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
+		wsConnector(m, w, r)
+	})
+
+	http.HandleFunc("/admin", func(w http.ResponseWriter, r *http.Request) {
+		wsAdminConnector(m, w, r)
+	})
+
+	http.HandleFunc("/view", func(w http.ResponseWriter, r *http.Request) {
+		wsViewConnector(m, w, r)
+	})
 
 	http.Handle("/", http.FileServer(http.Dir("frontend/")))
 
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	logger.Fatal(http.ListenAndServe(":8080", nil))
 }

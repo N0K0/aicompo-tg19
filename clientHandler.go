@@ -4,8 +4,9 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/google/logger"
 	"github.com/gorilla/websocket"
+
+	"github.com/google/logger"
 )
 
 const (
@@ -17,9 +18,6 @@ const (
 
 	// Send pings to peer with this period. Must be less than pongWait.
 	pingPeriod = (pongWait * 9) / 10
-
-	// Maximum message size allowed from peer.
-	maxMessageSize = 5120
 )
 
 // Status for enumeration
@@ -32,12 +30,12 @@ const (
 	Waiting     Status = iota
 )
 
-func (p *Player) writeSocket() {
+func (p *Player) writePump() {
 	logger.Info("Write Socket")
-	ticker := time.NewTicker(pingPeriod)
+	pingTicker := time.NewTicker(pingPeriod)
 	defer func() {
 		logger.Info("Player dead")
-		ticker.Stop()
+		pingTicker.Stop()
 	}()
 	for {
 		select {
@@ -57,7 +55,6 @@ func (p *Player) writeSocket() {
 
 			w, err := p.conn.NextWriter(websocket.TextMessage)
 			if err != nil {
-				logger.Info("client.conn.NextWriter")
 				return
 			}
 			_, err = w.Write(message)
@@ -77,10 +74,11 @@ func (p *Player) writeSocket() {
 			if err := w.Close(); err != nil {
 				return
 			}
-		case <-ticker.C:
+		case <-pingTicker.C:
+			logger.Info("ping ticker")
 			err := p.conn.SetWriteDeadline(time.Now().Add(writeWait))
 			if err != nil {
-				logger.Info("client.conn.SetWriteDeadline")
+				logger.Info("Error set deadline Ticker")
 			}
 			if err := p.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
 				return
@@ -89,9 +87,8 @@ func (p *Player) writeSocket() {
 	}
 }
 
-func (p *Player) readSocket() {
+func (p *Player) readPump() {
 	logger.Info("Read Socket")
-	p.conn.SetReadLimit(maxMessageSize)
 	err := p.conn.SetReadDeadline(time.Now().Add(pongWait))
 	if err != nil {
 		logger.Info("client.conn.SetReadDeadline")
@@ -114,11 +111,11 @@ func (p *Player) readSocket() {
 			} else {
 				logger.Infof("Client '%s' closed socket at %v ", p.Username, p.conn.RemoteAddr())
 			}
-			p.gmUnregister <- *p
+			p.gmUnregister <- p
 			break
 		}
+		logger.Infof("Got message from player: %v", message)
 		p.qRecv <- message
-		logger.Infof("Got message %s (queue: %v)", message, len(p.qRecv))
 	}
 }
 
@@ -192,7 +189,7 @@ func (p *Player) run() {
 
 	// Routines used to interact with the WebSocket
 	// I'm keeping is separated from the logic below to make everything a bit more clean
-	go p.writeSocket()
-	go p.readSocket()
+	go p.writePump()
+	go p.readPump()
 	go p.parseCommand()
 }

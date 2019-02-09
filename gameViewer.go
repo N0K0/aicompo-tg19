@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/google/logger"
+
 	"github.com/gorilla/websocket"
 )
 
@@ -19,13 +20,13 @@ type gameViewer struct {
 	pingTicker   *time.Ticker
 }
 
-func (gv *gameViewer) writeSocket() {
+func (gv *gameViewer) writePump() {
+	logger.Info("Running gameViewer writePump")
 
 	statusFreq := (100 / 10) * time.Millisecond
 
 	logger.Infof("Update time: %v", statusFreq)
 	gv.pingTicker = time.NewTicker(pingPeriod)
-	gv.statusTicker = time.NewTicker(statusFreq)
 	defer func() {
 		gv.pingTicker.Stop()
 		gv.statusTicker.Stop()
@@ -75,6 +76,7 @@ func (gv *gameViewer) writeSocket() {
 				return
 			}
 		case <-gv.pingTicker.C:
+			logger.Info("ping ticker")
 			err := gv.conn.SetWriteDeadline(time.Now().Add(writeWait))
 			if err != nil {
 				logger.Info("Error set deadline Ticker")
@@ -82,22 +84,14 @@ func (gv *gameViewer) writeSocket() {
 			if err := gv.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
 				return
 			}
-		case <-gv.statusTicker.C:
-			// Time to update the status
-			gv.gm.mapLock.Lock()
-			if gv.conn == nil {
-				gv.statusTicker.Stop()
-			}
-			gv.qSend <- gv.gm.generateStatusJson()
-			gv.gm.mapLock.Unlock()
 
 		}
+
 	}
 }
 
-func (gv *gameViewer) readSocket() {
-	logger.Info("GameViewer Read Socket")
-	gv.conn.SetReadLimit(maxMessageSize)
+func (gv *gameViewer) readPump() {
+	logger.Info("Running gameViewer readPump")
 	err := gv.conn.SetReadDeadline(time.Now().Add(pongWait))
 	if err != nil {
 		logger.Info("Err set read Deadline")
@@ -124,13 +118,25 @@ func (gv *gameViewer) readSocket() {
 			}
 			break
 		}
-		logger.Info("Waiting for GameViewer message")
 		gv.qRecv <- message
 	}
 }
 
-func (gv *gameViewer) run() {
-	go gv.readSocket()
-	go gv.writeSocket()
+func (gv *gameViewer) statusUpdater() {
+	logger.Info("Running statusUpdater")
+	gv.statusTicker = time.NewTicker(100 * time.Millisecond)
+	for {
+		select {
+		case <-gv.statusTicker.C:
+			bytes := gv.gm.generateStatusJson()
+			gv.qSend <- bytes
+		}
+	}
+}
 
+func (gv *gameViewer) run() {
+	logger.Info("Running viewer")
+	go gv.readPump()
+	go gv.writePump()
+	go gv.statusUpdater()
 }

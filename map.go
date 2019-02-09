@@ -68,6 +68,7 @@ XX____
 */
 func mapFromString(mapInput string) GameMap {
 	logger.Info("Parsing map")
+	defer logger.Info("Map parsed")
 	lines := strings.Split(mapInput, "\n")
 	size := strings.Split(lines[0], ",")
 	sizeX, err := strconv.Atoi(size[0])
@@ -125,5 +126,4 @@ func mapFromString(mapInput string) GameMap {
 	gm.SizeX = sizeX
 	gm.SizeY = sizeY
 	return gm
-
 }

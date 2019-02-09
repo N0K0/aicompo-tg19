@@ -13,8 +13,8 @@ import (
 
 const (
 	// For which when a turn executes regardless of if all has sent their commands
-	turnTimeMax = 750 * time.Millisecond
-	turnTimeMin = 200 * time.Millisecond
+	turnTimeMax = 7500 * time.Millisecond
+	turnTimeMin = 2000 * time.Millisecond
 
 	// Other config. TODO: Look into flags
 	gameRounds = 5
@@ -48,7 +48,7 @@ func (gs gamestate) MarshalText() (text []byte, err error) {
 // It looks for all the commands that has been sent in from the different players.
 type GameHandler struct {
 	// Meta info
-	players map[*Player]Player
+	players map[*Player]bool
 	Status  gamestate
 
 	gameView *gameViewer
@@ -56,8 +56,8 @@ type GameHandler struct {
 	// Channels
 	timerDeadline *time.Timer
 	timerMinline  *time.Timer
-	register      chan Player
-	unregister    chan Player
+	register      chan *Player
+	unregister    chan *Player
 
 	adminChan chan string
 
@@ -72,13 +72,13 @@ type GameHandler struct {
 func newGameHandler() *GameHandler {
 	logger.Info("New GameHandler")
 	return &GameHandler{
-		players:       make(map[*Player]Player),
+		players:       make(map[*Player]bool),
 		Status:        pregame,
 		timerDeadline: time.NewTimer(turnTimeMax),
 		timerMinline:  time.NewTimer(turnTimeMin),
-		register:      make(chan Player, 10),
-		unregister:    make(chan Player, 10),
-		adminChan:     make(chan string, 10),
+		register:      make(chan *Player, 1),
+		unregister:    make(chan *Player, 1),
+		adminChan:     make(chan string, 1),
 		GameNumber:    0,
 		RoundNumber:   0,
 		GameMap:       baseGameMap(),
@@ -92,12 +92,12 @@ func (g *GameHandler) run() {
 	for {
 		select {
 		case player := <-g.register:
-			g.players[&player] = player
+			g.players[player] = true
 			logger.Infof("Players: %v", len(g.players))
 			go player.run()
 		case player := <-g.unregister:
 			logger.Infof("Unregistering %v", player)
-			delete(g.players, &player)
+			delete(g.players, player)
 			close(player.qRecv)
 			close(player.qSend)
 			err := player.conn.Close()
@@ -110,12 +110,11 @@ func (g *GameHandler) run() {
 
 func (g *GameHandler) gameState() {
 	for {
+		time.Sleep(1 * time.Nanosecond)
 		switch g.Status {
 		case pregame:
 			break
 		case running:
-			break
-		case done:
 			break
 		}
 	}
@@ -167,28 +166,24 @@ func (g *GameHandler) execTurn() {
 //	Round
 
 func (g *GameHandler) generateStatusJson() []byte {
-	logger.Infof("Generating state")
-	//defer logger.Infof("Generating Done")
-	tmpPlayers := make(map[string]Player)
+
+	tmpPlayers := make(map[string]bool)
 
 	for k := range g.players {
-		tmpPlayers[k.Username] = *k
+		tmpPlayers[k.Username] = true
 	}
 
 	status := StatusObject{
 		NumPlayers: len(tmpPlayers),
-		//Players:    tmpPlayers,
-		//GameStatus: *g,
+		Players:    tmpPlayers,
+		GameStatus: *g,
 	}
 
-	logger.Infof("Marshal")
 	bytes, err := json.Marshal(status)
 	if err != nil {
 		logger.Infof("Unable to marshal json")
 		panic("Unable to marshal json")
 	}
-	logger.Infof("Marshal Done")
-
 	return bytes
 
 }
@@ -213,7 +208,7 @@ type Player struct {
 	qRecv chan []byte
 	// Logic data
 	turnsLost    int
-	gmUnregister chan Player
+	gmUnregister chan *Player
 
 	// GameData
 	// X,Y is two lists which when zipped creates the coordinates of the snake

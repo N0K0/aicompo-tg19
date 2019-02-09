@@ -13,6 +13,6 @@ type ClientInfo struct {
 
 type StatusObject struct {
 	NumPlayers int
-	Players    map[string]Player
+	Players    map[string]bool
 	GameStatus GameHandler
 }
