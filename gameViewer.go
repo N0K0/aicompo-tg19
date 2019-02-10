@@ -124,7 +124,7 @@ func (gv *gameViewer) readPump() {
 
 func (gv *gameViewer) statusUpdater() {
 	logger.Info("Running statusUpdater")
-	gv.statusTicker = time.NewTicker(100 * time.Millisecond)
+	gv.statusTicker = time.NewTicker(1000 * time.Millisecond)
 	for {
 		select {
 		case <-gv.statusTicker.C:
