@@ -4,9 +4,8 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/gorilla/websocket"
-
 	"github.com/google/logger"
+	"github.com/gorilla/websocket"
 )
 
 // adminHandler takes care of starting the game and is used for spectating the events. Used by the web interface
@@ -43,12 +42,36 @@ func (admin *adminHandler) run() {
 }
 
 func adminParseCommand(jsonObj []byte) {
+	logger.Info("Got admin command")
 	var c Command
 	err := json.Unmarshal(jsonObj, &c)
 
 	if err != nil {
 		logger.Infof("Problem with admin command %v: %v", c, err)
 	}
+
+	switch c.Type {
+	case "config":
+		adminParseConfigUpdates([]byte(c.Value))
+		break
+	case "game_start":
+		break
+	default:
+		break
+	}
+
+}
+
+func adminParseConfigUpdates(jsonObj []byte) {
+	logger.Info("Admin Config update")
+	var c ConfigUpdate
+	err := json.Unmarshal(jsonObj, &c)
+
+	if err != nil {
+		logger.Infof("Problem with admin command %v: %v", c, err)
+	}
+
+	logger.Infof("Got json config: %v", c)
 
 }
 
@@ -58,6 +81,20 @@ func (admin *adminHandler) logStatus() {
 	`
 	numPlayers := len(admin.gm.players)
 	logger.Infof(statusString, numPlayers)
+}
+
+func (admin *adminHandler) sendError(message string) {
+	msg := Envelope{
+		Type:    "error",
+		Message: message,
+	}
+
+	jsonString, err := json.Marshal(msg)
+	if err != nil {
+		logger.Error("Problems with creating error message")
+	}
+
+	admin.qSend <- jsonString
 }
 
 func (admin *adminHandler) writeSocket() {
