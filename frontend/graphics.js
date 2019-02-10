@@ -7,8 +7,6 @@ class Viewer{
         this.ctx.height = 800;
         this.ctx.width = 800;
 
-        this.ctx.style.width  = '800px';
-        this.ctx.style.height = '600px';
     }
 }
 
@@ -16,18 +14,15 @@ Viewer.prototype.viewConnect = function() {
     if(this.connection != null){
         toLog("Client1 already connected!");
     }
-    toLog("Connecting view");
     console.log("Connecting view");
     let viewer = this;
     this.connection = new WebSocket("ws://localhost:8080/view");
     // noinspection JSUnusedLocalSymbols
     this.connection.onopen = function(evt) {
-        toLog("Viewer Open");
         console.log("Viewer Open");
     };
     // noinspection JSUnusedLocalSymbols
     this.connection.onclose = function(evt) {
-        toLog("Viewer Closed");
         console.log("Viewer Closed");
         viewer.connection = null;
     };
@@ -36,7 +31,7 @@ Viewer.prototype.viewConnect = function() {
         viewer.render_scene(JSON.parse(evt.data))
     };
     this.connection.onerror = function(evt) {
-        toLog("ERROR: " + evt.data);
+        console.log("ERROR: " + evt.data);
     };
 };
 
