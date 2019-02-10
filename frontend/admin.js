@@ -5,32 +5,32 @@ function adminConnect() {
         toLog("Admin already connected..");
         return false;
     }
-    toLog("Starting admin connect");
+    console.log("Starting admin connect");
     admin_ws = new WebSocket("ws://localhost:8080/admin");
     // noinspection JSUnusedLocalSymbols
     admin_ws.onopen = function(evt) {
-        toLog("Admin socket started");
+        console.log("Admin socket started");
     };
     // noinspection JSUnusedLocalSymbols
     admin_ws.onclose = function(evt) {
-        toLog("Admin socket closed!");
+        console.log("Admin socket closed!");
         admin_ws = null;
     };
     admin_ws.onmessage = function(evt) {
-        toLog("A RESPONSE: " + evt.data);
+        console.log("A RESPONSE: " + evt.data);
     };
     admin_ws.onerror = function(evt) {
-        toLog("A ERROR: " + evt.data);
+        console.log("A ERROR: " + evt.data);
     };
 }
 
 function adminDisconnect() {
     if(admin_ws != null) {
-        toLog("Closing socket");
+        console.log("Closing socket");
         admin_ws.close();
         admin_ws = null;
     } else {
-        toLog("Socket not open");
+        console.log("Socket not open");
     }
 }
 
@@ -39,7 +39,7 @@ function startSystem() {
     if(admin_ws == null) {
         return false;
     }
-    toLog("Admin: Starting system");
+    console.log("Admin: Starting system");
     sendCommand("start");
 }
 
@@ -47,19 +47,19 @@ function pauseSystem() {
     if(admin_ws == null) {
         return false;
     }
-    toLog("Admin: pauseSystem");
+    console.log("Admin: pauseSystem");
     sendCommand("pause");
 }
 function restartSystem() {
     if(admin_ws == null) {
         return false;
     }
-    toLog("Admin: restartSystem");
+    console.log("Admin: restartSystem");
     sendCommand("restart");
 }
 
 function sendInvalid() {
-    toLog("Sending invalid data");
+    console.log("Sending invalid data");
 
     let payload = {
         invalid: "test"
@@ -68,7 +68,7 @@ function sendInvalid() {
 }
 
 function sendCommand(command) {
-    toLog("Sending admin command: " + command);
+    console.log("Sending admin command: " + command);
     let payload = {
         command: command,
     };
@@ -78,5 +78,5 @@ function sendCommand(command) {
 
 function create_simple_player(){
     create_player();
-    toLog("Players: "  +Object.keys(local_players).length)
+    console.log("Players: "  +Object.keys(local_players).length)
 }
