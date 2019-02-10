@@ -6,9 +6,16 @@ type Command struct {
 	Value string `json:"command"`
 }
 
-type ClientInfo struct {
+type Envelope struct {
 	Type    string `json:"type"`
 	Message string `json:"message"`
+}
+
+type ConfigUpdate struct {
+	Pairs []struct {
+		Name  string `json:"name"`
+		Value string `json:"value"`
+	}
 }
 
 type StatusObject struct {

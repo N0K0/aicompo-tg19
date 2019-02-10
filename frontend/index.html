@@ -26,43 +26,59 @@
             <div id="setting">
                 <h2>Settings</h2>
 
-                <p>Speed:
-                    <input id="speed1" type="radio" name="speed" value="120" checked/>
-                    <label for="speed1">Slow</label>
-                    <input id="speed2" type="radio" name="speed" value="75"/>
-                    <label for="speed2">Normal</label>
-                    <input id="speed3" type="radio" name="speed" value="35"/>
-                    <label for="speed3">Fast</label>
+                <p> Map Size:
+                    <input id="map_size1" type="radio" name="map_size" value="20x20"/>
+                    <label for="map_size1">20x20</label>
+                    <input id="map_size2" type="radio" name="map_size" value="40x40"/>
+                    <label for="map_size2">40x40</label>
+                    <input id="map_size3" type="radio" name="map_size" value="80x80"/>
+                    <label for="map_size3">80x80</label>
+                    <input id="map_size4" type="radio" name="map_size" value="0x0" checked/>
+                    <label for="map_size4">Auto</label>
                 </p>
 
-                <p>Wall:
+                <p>Minimum turn time:
+                    <input id="min_speed1" type="radio" name="min_time" value="200" checked/>
+                    <label for="min_speed1">200ms</label>
+                    <input id="min_speed2" type="radio" name="min_time" value="400"/>
+                    <label for="min_speed2">400ms</label>
+                    <input id="min_speed3" type="radio" name="min_time" value="700"/>
+                    <label for="min_speed3">700ms</label>
+                </p>
+
+                <p>Maximal turn time:
+                    <input id="max_speed1" type="radio" name="max_time" value="400" />
+                    <label for="max_speed1">400ms</label>
+                    <input id="max_speed2" type="radio" name="max_time" value="800" checked/>
+                    <label for="max_speed2">800ms</label>
+                    <input id="max_speed3" type="radio" name="max_time" value="1200"/>
+                    <label for="max_speed3">1200ms</label>
+                </p>
+
+                <p>Outer walls:
                     <input id="wallon" type="radio" name="wall" value="1" checked/>
                     <label for="wallon">On</label>
                     <input id="walloff" type="radio" name="wall" value="0"/>
                     <label for="walloff">Off</label>
                 </p>
 
-                <a id="setting_save">Save and Exit</a>
-                <a id="setting_back">Back</a>
+                <a id="setting_save">Save and Back</a>
 
             </div>
 
             <!-- Main Menu Screen -->
             <div id="menu">
                 <h2>Snake</h2>
-
                 <a id="newgame_menu">new game</a>
                 <a id="setting_menu">settings</a>
             </div>
         </div>
-
     </div>
 
-
+    <script src="utilities.js"></script>
     <script src="admin.js"></script>
     <script src="graphics.js"></script>
     <script src="main.js"></script>
-    <script src="utilities.js"></script>
     <script src="ui.js"></script>
 
 </body>
