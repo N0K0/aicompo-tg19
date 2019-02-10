@@ -154,7 +154,7 @@ func (p *Player) parseCommand() {
 }
 
 func (p *Player) sendError(message string) {
-	msg := ClientInfo{
+	msg := Envelope{
 		Type:    "error",
 		Message: message,
 	}
