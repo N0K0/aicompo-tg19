@@ -2,16 +2,15 @@ class Viewer{
     constructor() {
         this.connection = null;
         this.canvas = document.querySelector('canvas');
-        this.parent = document.getElementById("parent");
         this.ctx = this.canvas.getContext('2d');
 
-        this.canvas.width = this.width = this.parent.offsetWidth;
-        this.canvas.height = this.height = this.parent.offsetHeight;
+        this.ctx.height = 800;
+        this.ctx.width = 800;
+
+        this.ctx.style.width  = '800px';
+        this.ctx.style.height = '600px';
     }
 }
-
-
-
 
 Viewer.prototype.viewConnect = function() {
     if(this.connection != null){

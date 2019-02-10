@@ -2,48 +2,68 @@
 <!--suppress HtmlRequiredLangAttribute -->
 <html>
 <head>
-    <meta charset="utf-8" />
+    <meta charset="utf-8"/>
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <title>GO Websockets</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" href="main.css">
-    <link href="https://fonts.googleapis.com/css?family=Source+Code+Pro" rel="stylesheet"> 
-    
 </head>
 <body>
-    <div id="page">
-        <div id="parent">
-            <canvas id="canvas">
-            </canvas>
-        </div>
-        
-        <div id="logArea">
-        </div>
-    </div>
-    <div id="debug">
-        <div>
-            Admin area (testing)
-        </div>
-        <div>
-            <button onclick="adminConnect()">Connect</button>
-            <button onclick="adminDisconnect()">Disconnect</button>
-            <button onclick="startSystem()">Start</button>
-            <button onclick="sendInvalid()">Invalid</button>
-            <button onclick="pauseSystem()">Pause</button>
-            <button onclick="restartSystem()"> Restart</button>
+
+    <div id="game">
+        <canvas class="wrap" id="snake" width="800" height="800" tabindex="1"></canvas>
+
+        <div id="ui">
+            <!-- Game Over Screen -->
+            <div id="gameover">
+                <h2>Game Over</h2>
+                <p>press <span style="background-color: #FFFFFF; color: #000000">space</span> to begin a</p>
+                <a id="newgame_gameover">new game</a>
+                <a id="setting_gameover">settings</a>
+            </div>
+
+            <!-- Setting screen -->
+            <div id="setting">
+                <h2>Settings</h2>
+
+                <p>Speed:
+                    <input id="speed1" type="radio" name="speed" value="120" checked/>
+                    <label for="speed1">Slow</label>
+                    <input id="speed2" type="radio" name="speed" value="75"/>
+                    <label for="speed2">Normal</label>
+                    <input id="speed3" type="radio" name="speed" value="35"/>
+                    <label for="speed3">Fast</label>
+                </p>
+
+                <p>Wall:
+                    <input id="wallon" type="radio" name="wall" value="1" checked/>
+                    <label for="wallon">On</label>
+                    <input id="walloff" type="radio" name="wall" value="0"/>
+                    <label for="walloff">Off</label>
+                </p>
+
+                <a id="setting_save">Save and Exit</a>
+                <a id="setting_back">Back</a>
+
+            </div>
+
+            <!-- Main Menu Screen -->
+            <div id="menu">
+                <h2>Snake</h2>
+
+                <a id="newgame_menu">new game</a>
+                <a id="setting_menu">settings</a>
+            </div>
         </div>
 
-        <div>
-            Client (testing)
-        </div>
-        <div>
-            <button onclick="create_simple_player()">Create new bot</button>
-        </div>
     </div>
+
+
     <script src="admin.js"></script>
-    <script src="simple_player.js"></script>
     <script src="graphics.js"></script>
     <script src="main.js"></script>
+    <script src="utilities.js"></script>
+    <script src="ui.js"></script>
 
 </body>
 </html>

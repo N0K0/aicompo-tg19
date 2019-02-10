@@ -114,6 +114,11 @@ function sendCommand(player,type, command) {
     player.connection.send(JSON.stringify(payload));
 }
 
+function create_simple_player(){
+    create_player();
+    toLog("Players: "  +Object.keys(local_players).length)
+}
+
 function makeid() {
     let text = "";
     // noinspection SpellCheckingInspection
