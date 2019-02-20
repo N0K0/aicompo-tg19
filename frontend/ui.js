@@ -156,7 +156,7 @@ function save_settings(){
 
     let envelope = {
         "type": "config",
-        "value": payload
+        "message": payload
     };
 
     admin_ws.send(JSON.stringify(envelope));

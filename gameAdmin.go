@@ -43,7 +43,8 @@ func (admin *adminHandler) run() {
 
 func adminParseCommand(jsonObj []byte) {
 	logger.Info("Got admin command")
-	var c Command
+	c := EnvelopePartial{}
+
 	err := json.Unmarshal(jsonObj, &c)
 
 	if err != nil {
@@ -52,7 +53,7 @@ func adminParseCommand(jsonObj []byte) {
 
 	switch c.Type {
 	case "config":
-		adminParseConfigUpdates([]byte(c.Value))
+		adminParseConfigUpdates(&c.Message)
 		break
 	case "game_start":
 		break
@@ -62,16 +63,32 @@ func adminParseCommand(jsonObj []byte) {
 
 }
 
-func adminParseConfigUpdates(jsonObj []byte) {
-	logger.Info("Admin Config update")
+func adminParseConfigUpdates(jsonObj *json.RawMessage) {
+	logger.Infof("Admin Config update\n%v", jsonObj)
 	var c ConfigUpdate
-	err := json.Unmarshal(jsonObj, &c)
+	err := json.Unmarshal(*jsonObj, &c)
 
 	if err != nil {
 		logger.Infof("Problem with admin command %v: %v", c, err)
 	}
 
 	logger.Infof("Got json config: %v", c)
+
+	for _, config := range c.Configs {
+		switch config.Name {
+		case "minTurnUpdate":
+			return
+		case "maxTurnUpdate":
+			return
+		case "mapSize":
+			return
+		case "outerWalls":
+			return
+		default:
+			logger.Error("Unable to parse configLine %v", config.Name)
+
+		}
+	}
 
 }
 

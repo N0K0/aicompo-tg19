@@ -1,5 +1,7 @@
 package main
 
+import "encoding/json"
+
 // Command struct defines how commands from players/admin should be formatted
 type Command struct {
 	Type  string `json:"type"`
@@ -11,11 +13,16 @@ type Envelope struct {
 	Message string `json:"message"`
 }
 
+type EnvelopePartial struct {
+	Type    string          `json:"type"`
+	Message json.RawMessage `json:"message"`
+}
+
 type ConfigUpdate struct {
-	Pairs []struct {
+	Configs []struct {
 		Name  string `json:"name"`
 		Value string `json:"value"`
-	}
+	} `json:"configs"`
 }
 
 type StatusObject struct {
