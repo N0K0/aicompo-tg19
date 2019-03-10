@@ -2,6 +2,8 @@ package main
 
 import (
 	"encoding/json"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/google/logger"
@@ -32,7 +34,7 @@ func (admin *adminHandler) run() {
 		select {
 		case incoming := <-admin.qRecv:
 			logger.Infof("New admin message: %s", incoming)
-			adminParseCommand(incoming)
+			admin.adminParseCommand(incoming)
 			break
 		case <-loggerTicker.C:
 			admin.logStatus()
@@ -41,7 +43,7 @@ func (admin *adminHandler) run() {
 	}
 }
 
-func adminParseCommand(jsonObj []byte) {
+func (admin *adminHandler) adminParseCommand(jsonObj []byte) {
 	logger.Info("Got admin command")
 	c := EnvelopePartial{}
 
@@ -53,8 +55,9 @@ func adminParseCommand(jsonObj []byte) {
 
 	switch c.Type {
 	case "config":
-		adminParseConfigUpdates(&c.Message)
-		break
+		admin.adminParseConfigUpdates(&c.Message)
+	case "config_get":
+		admin.adminPushConfig()
 	case "game_start":
 		break
 	default:
@@ -63,7 +66,7 @@ func adminParseCommand(jsonObj []byte) {
 
 }
 
-func adminParseConfigUpdates(jsonObj *json.RawMessage) {
+func (admin *adminHandler) adminParseConfigUpdates(jsonObj *json.RawMessage) {
 	logger.Infof("Admin Config update\n%v", jsonObj)
 	var c ConfigUpdate
 	err := json.Unmarshal(*jsonObj, &c)
@@ -74,22 +77,99 @@ func adminParseConfigUpdates(jsonObj *json.RawMessage) {
 
 	logger.Infof("Got json config: %v", c)
 
+	ch := admin.gm.config
+
 	for _, config := range c.Configs {
 		switch config.Name {
 		case "minTurnUpdate":
-			return
+			if ch.MinTurnUpdate > ch.MaxTurnUpdate {
+				admin.sendError("Min turn time is not lower than max turn time!")
+				break
+			}
+
+			value, err := strconv.Atoi(config.Value)
+			if err != nil {
+				admin.sendError("Unable to convert value to int")
+			}
+			ch.MinTurnUpdate = value
+
 		case "maxTurnUpdate":
-			return
+			if ch.MinTurnUpdate > ch.MaxTurnUpdate {
+				admin.sendError("Max turn time is lower than min turn time!")
+				break
+			}
+
+			value, err := strconv.Atoi(config.Value)
+			if err != nil {
+				admin.sendError("Unable to convert value to int")
+			}
+			ch.MaxTurnUpdate = value
+
 		case "mapSize":
-			return
+			parts := strings.Split(config.Value, "x")
+
+			if len(parts) != 2 {
+				admin.sendError("Did not find two elements when splitting on 'X'")
+				break
+			}
+
+			mapXStr, mapYStr := parts[0], parts[1]
+
+			mapX, err := strconv.Atoi(mapXStr)
+			if err != nil {
+				admin.sendError("Could not convert X elem to int")
+				break
+			}
+
+			if mapX < 3 && mapX != 0 {
+				admin.sendError("Map can not be under size 3")
+				break
+			}
+			mapY, err := strconv.Atoi(mapYStr)
+			if err != nil {
+				admin.sendError("Could not convert Y elem to int")
+				break
+			}
+
+			if mapY < 3 && mapY != 0 {
+				admin.sendError("Map can not be under size 3")
+				break
+			}
+			ch.mapSizeX = mapX
+			ch.mapSizeY = mapY
+
 		case "outerWalls":
-			return
+
 		default:
 			logger.Error("Unable to parse configLine %v", config.Name)
-
 		}
 	}
 
+}
+
+func (admin *adminHandler) adminPushConfig() {
+	logger.Info("Pushing config to frontend")
+
+	jsonString, err := json.Marshal(admin.gm.config)
+	if err != nil {
+		admin.sendError("Problems with creating message")
+		return
+	}
+
+	env := Envelope{
+		Type:    "config_push",
+		Message: string(jsonString),
+	}
+
+	jsonString, err = json.Marshal(env)
+	if err != nil {
+		admin.sendError("Problems with creating message")
+		return
+	}
+
+	logger.Info(string(jsonString))
+
+	admin.qSend <- jsonString
 }
 
 func (admin *adminHandler) logStatus() {
@@ -109,8 +189,10 @@ func (admin *adminHandler) sendError(message string) {
 	jsonString, err := json.Marshal(msg)
 	if err != nil {
 		logger.Error("Problems with creating error message")
+		return
 	}
 
+	logger.Errorf("Sending error: %s", message)
 	admin.qSend <- jsonString
 }
 
@@ -195,7 +277,7 @@ func (admin *adminHandler) readSocket() {
 				logger.Infof("IsUnexpectedCloseError admin: %v", err)
 			} else {
 				// Admin disconnected
-				logger.Infof("Admin closed socket at %v ", admin.conn.RemoteAddr())
+				logger.Infof("Admin closed socket at %v . Removing connection", admin.conn.RemoteAddr())
 				admin.conn = nil
 				admin.ticker.Stop()
 			}

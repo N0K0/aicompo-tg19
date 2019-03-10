@@ -5,7 +5,8 @@ function random(min,max) {
   return  Math.floor(Math.random()*(max-min)) + min;
 }
 
-adminConnect();
+let admin_ws;
+admin_ws = adminConnect();
 
 let viewer = new Viewer();
 viewer.viewConnect();

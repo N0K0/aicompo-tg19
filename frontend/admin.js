@@ -1,12 +1,8 @@
-let admin_ws = null;
 
 function adminConnect() {
-    if(admin_ws != null){
-        toLog("Admin already connected..");
-        return false;
-    }
+
     console.log("Starting admin connect");
-    admin_ws = new WebSocket("ws://localhost:8080/admin");
+    let admin_ws = new WebSocket("ws://localhost:8080/admin");
     // noinspection JSUnusedLocalSymbols
     admin_ws.onopen = function(evt) {
         console.log("Admin socket started");
@@ -18,10 +14,13 @@ function adminConnect() {
     };
     admin_ws.onmessage = function(evt) {
         console.log("A RESPONSE: " + evt.data);
+        parseAdminEvent(evt)
     };
     admin_ws.onerror = function(evt) {
         console.log("A ERROR: " + evt.data);
     };
+
+    return admin_ws
 }
 
 function adminDisconnect() {
@@ -34,6 +33,19 @@ function adminDisconnect() {
     }
 }
 
+function parseAdminEvent(evt) {
+    let json = JSON.parse(evt.data);
+
+    switch (json.type) {
+        case "config_push":
+            import_settings(json.message);
+            break;
+        default:
+            console.log("Unable to parse admin message");
+            break;
+
+    }
+}
 
 function startSystem() {
     if(admin_ws == null) {
