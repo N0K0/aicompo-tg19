@@ -49,8 +49,8 @@ Viewer.prototype.paint_canvas = function () {
 Viewer.prototype.render_scene = function (game_status) {
     this.paint_canvas(game_status);
 
-    console.log(game_status);
-    console.log(game_status.GameStatus.Status);
+    //console.log(game_status);
+    //console.log(game_status.GameStatus.Status);
 
     // Render snakes
 
