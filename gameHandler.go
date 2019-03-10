@@ -12,13 +12,13 @@ import (
 )
 
 const (
+	// TODO: This is getting moved into GameConfigHolder
 	// For which when a turn executes regardless of if all has sent their commands
 	turnTimeMax = 7500 * time.Millisecond
 	turnTimeMin = 2000 * time.Millisecond
 
 	// Other config. TODO: Look into flags
-	gameRounds = 5
-
+	gameRounds     = 5
 	contWithWinner = true // Should end game when winners is clear (for example 3/5 wins already)
 
 )
@@ -50,6 +50,7 @@ type GameHandler struct {
 	// Meta info
 	players map[*Player]bool
 	Status  gamestate
+	config  *GameConfigHolder
 
 	gameView *gameViewer
 
@@ -82,6 +83,7 @@ func newGameHandler() *GameHandler {
 		GameNumber:    0,
 		RoundNumber:   0,
 		GameMap:       baseGameMap(),
+		config:        NewConfigHolder(),
 	}
 }
 
@@ -121,7 +123,7 @@ func (g *GameHandler) gameState() {
 }
 
 func (g *GameHandler) pregame() {
-
+	time.Sleep(time.Nanosecond)
 }
 
 func (g *GameHandler) running() {
@@ -141,7 +143,7 @@ func (g *GameHandler) running() {
 }
 
 func (g *GameHandler) gameDone() {
-
+	time.Sleep(time.Nanosecond)
 }
 
 // newTurn reset states for the clients and readies everything for a new round
@@ -162,7 +164,7 @@ func (g *GameHandler) execTurn() {
 // Things we need:
 //	Players
 //	Scores
-//	Turn
+//	TurnNewConfigHolder
 //	Round
 
 func (g *GameHandler) generateStatusJson() []byte {
@@ -185,7 +187,15 @@ func (g *GameHandler) generateStatusJson() []byte {
 		panic("Unable to marshal json")
 	}
 	return bytes
+}
 
+func NewConfigHolder() *GameConfigHolder {
+	return &GameConfigHolder{
+		MinTurnUpdate: 400,
+		MaxTurnUpdate: 800,
+		MapSize:       "0x0",
+		OuterWalls:    1,
+	}
 }
 
 // Player struct is strongly connected to the player struct.

@@ -30,3 +30,12 @@ type StatusObject struct {
 	Players    map[string]bool
 	GameStatus GameHandler
 }
+
+type GameConfigHolder struct {
+	MinTurnUpdate int    `json:"minTurnUpdate"`
+	MaxTurnUpdate int    `json:"maxTurnUpdate"`
+	OuterWalls    int    `json:"outerWalls"`
+	MapSize       string `json:"mapSize"`
+	mapSizeX      int
+	mapSizeY      int
+}
