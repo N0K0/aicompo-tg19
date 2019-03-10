@@ -56,6 +56,7 @@ func wsConnector(manager *Managers, w http.ResponseWriter, r *http.Request) {
 
 // wsAdminConnector is used by admins to control the game
 func wsAdminConnector(manager *Managers, w http.ResponseWriter, r *http.Request) {
+
 	ws, err := adminUpgrader.Upgrade(w, r, nil)
 	if err != nil {
 		logger.Info("Error setting up new socket connection")
@@ -73,12 +74,15 @@ func wsAdminConnector(manager *Managers, w http.ResponseWriter, r *http.Request)
 		}
 		go manager.am.run()
 
-	} else if &manager.am.conn == nil {
-		logger.Info("Using old manager, giving it new socket")
+	} else if manager.am.conn == nil {
+		// Got an working manager, just need a new connection to the frontend
+		logger.Info("Using old admin-manager, giving it new socket")
 		manager.am.conn = ws
 		// We only need to rerun the sockets
 		go manager.am.readSocket()
 		go manager.am.writeSocket()
+	} else {
+		logger.Info("Something wierd with admin socket")
 	}
 }
 
@@ -106,7 +110,7 @@ func wsViewConnector(manager *Managers, w http.ResponseWriter, r *http.Request) 
 		go manager.vc.run()
 
 	} else if manager.vc.conn == nil {
-		logger.Info("Using old manager, giving it new socket")
+		logger.Info("Using old view-manager, giving it new socket")
 		manager.vc.conn = ws
 		// We only need to rerun the sockets
 		go manager.vc.readPump()
