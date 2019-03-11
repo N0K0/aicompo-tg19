@@ -1,39 +1,49 @@
-
-function adminConnect() {
-
-    console.log("Starting admin connect");
-    let admin_ws = new WebSocket("ws://localhost:8080/admin");
-    // noinspection JSUnusedLocalSymbols
-    admin_ws.onopen = function(evt) {
-        console.log("Admin socket started");
-    };
-    // noinspection JSUnusedLocalSymbols
-    admin_ws.onclose = function(evt) {
-        console.log("Admin socket closed!");
-        admin_ws = null;
-    };
-    admin_ws.onmessage = function(evt) {
-        console.log("A RESPONSE: " + evt.data);
-        parseAdminEvent(evt)
-    };
-    admin_ws.onerror = function(evt) {
-        console.log("A ERROR: " + evt.data);
-    };
-
-    return admin_ws
-}
-
-function adminDisconnect() {
-    if(admin_ws != null) {
-        console.log("Closing socket");
-        admin_ws.close();
-        admin_ws = null;
-    } else {
-        console.log("Socket not open");
+class AdminConnection {
+    constructor() {
+        this.admin_ws = null;
     }
 }
 
-function parseAdminEvent(evt) {
+
+AdminConnection.prototype.adminConnect = function() {
+    console.log("Starting admin connect");
+
+    if(this.admin_ws != null) {
+        console.log("Socket is already connected!");
+        return
+    }
+
+    this.admin_ws = new WebSocket("ws://localhost:8080/admin");
+    // noinspection JSUnusedLocalSymbols
+    this.admin_ws.onopen = function(evt) {
+        console.log("Admin socket started");
+    };
+    // noinspection JSUnusedLocalSymbols
+    this.admin_ws.onclose = function(evt) {
+        console.log("Admin socket closed!");
+        this.adminDisconnect()
+    };
+    this.admin_ws.onmessage = function(evt) {
+        console.log("A RESPONSE: " + evt.data);
+        this.parseAdminEvent(evt)
+    };
+    this.admin_ws.onerror = function(evt) {
+        console.log("A ERROR: " + evt.data);
+    };
+};
+
+AdminConnection.prototype.adminDisconnect = function() {
+    if(this.admin_ws != null) {
+        console.log("Closing socket");
+        this.admin_ws.close();
+        this.admin_ws = null;
+    } else {
+        console.log("Socket not open");
+    }
+};
+
+
+AdminConnection.prototype.parseAdminEvent = function(evt) {
     let json = JSON.parse(evt.data);
 
     switch (json.type) {
@@ -43,52 +53,60 @@ function parseAdminEvent(evt) {
         default:
             console.log("Unable to parse admin message");
             break;
-
     }
-}
+};
 
-function startSystem() {
+AdminConnection.prototype.startSystem = function() {
     if(admin_ws == null) {
+        console.log("No socket found... rejecting this call and trying to reconnect");
+        this.adminConnect();
         return false;
     }
     console.log("Admin: Starting system");
-    sendCommand("start");
-}
+    this.sendCommand("start");
+};
 
-function pauseSystem() {
+AdminConnection.prototype.pauseSystem = function() {
     if(admin_ws == null) {
+        console.log("No socket found... rejecting this call and trying to reconnect");
+        this.adminConnect();
         return false;
     }
     console.log("Admin: pauseSystem");
-    sendCommand("pause");
-}
-function restartSystem() {
+    this.sendCommand("pause");
+};
+
+AdminConnection.prototype.restartSystem = function() {
     if(admin_ws == null) {
+        console.log("No socket found... rejecting this call and trying to reconnect");
+        this.adminConnect();
         return false;
     }
     console.log("Admin: restartSystem");
-    sendCommand("restart");
-}
+    this.sendCommand("restart");
+};
 
-function sendInvalid() {
+
+// Function for testing via sending garbage
+AdminConnection.prototype.sendInvalid = function() {
     console.log("Sending invalid data");
 
     let payload = {
         invalid: "test"
     };
     admin_ws.send(JSON.stringify(payload))
-}
+};
 
-function sendCommand(command) {
+AdminConnection.prototype.sendCommand = function(command) {
     console.log("Sending admin command: " + command);
     let payload = {
         command: command,
     };
     admin_ws.send(JSON.stringify(payload));
-}
+};
 
 
-function create_simple_player(){
+AdminConnection.prototype.create_simple_player = function(){
     create_player();
     console.log("Players: "  +Object.keys(local_players).length)
-}
+};
