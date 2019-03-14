@@ -143,8 +143,7 @@ function fetch_settings(){
         "type": "config_get",
         "message": ""
     };
-
-    admin_ws.send(JSON.stringify(envelope));
+    admin_ws.conn.send(JSON.stringify(envelope));
 }
 
 // Settings logic
@@ -169,7 +168,7 @@ function save_settings(){
         "message": payload
     };
 
-    admin_ws.send(JSON.stringify(envelope));
+    admin_ws.conn.send(JSON.stringify(envelope));
     showScreen(1);
 }
 
@@ -180,7 +179,7 @@ function import_settings(payload){
     for(let k in settings){
         console.log(k);
 
-        value = settings[k];
+        let value = settings[k];
 
         switch(k){
             case "minTurnUpdate":

@@ -1,42 +1,43 @@
 class AdminConnection {
     constructor() {
-        this.admin_ws = null;
+        this.conn = null;
     }
 }
-
 
 AdminConnection.prototype.adminConnect = function() {
     console.log("Starting admin connect");
 
-    if(this.admin_ws != null) {
+    if(this.conn != null) {
         console.log("Socket is already connected!");
         return
     }
 
-    this.admin_ws = new WebSocket("ws://localhost:8080/admin");
+    let admin = this;
+
+    this.conn = new WebSocket("ws://localhost:8080/admin");
     // noinspection JSUnusedLocalSymbols
-    this.admin_ws.onopen = function(evt) {
+    this.conn.onopen = function(evt) {
         console.log("Admin socket started");
     };
     // noinspection JSUnusedLocalSymbols
-    this.admin_ws.onclose = function(evt) {
+    this.conn.onclose = function(evt) {
         console.log("Admin socket closed!");
-        this.adminDisconnect()
+        admin.adminDisconnect()
     };
-    this.admin_ws.onmessage = function(evt) {
+    this.conn.onmessage = function(evt) {
         console.log("A RESPONSE: " + evt.data);
-        this.parseAdminEvent(evt)
+        admin.parseAdminEvent(evt);
     };
-    this.admin_ws.onerror = function(evt) {
+    this.conn.onerror = function(evt) {
         console.log("A ERROR: " + evt.data);
     };
 };
 
 AdminConnection.prototype.adminDisconnect = function() {
-    if(this.admin_ws != null) {
+    if(this.conn != null) {
         console.log("Closing socket");
-        this.admin_ws.close();
-        this.admin_ws = null;
+        this.conn.close();
+        this.conn = null;
     } else {
         console.log("Socket not open");
     }
