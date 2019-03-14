@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/google/logger"
@@ -19,6 +20,8 @@ type adminHandler struct {
 	qRecv chan []byte
 
 	ticker *time.Ticker
+
+	mutex sync.Mutex
 }
 
 func (admin *adminHandler) run() {
@@ -80,28 +83,31 @@ func (admin *adminHandler) adminParseConfigUpdates(jsonObj *json.RawMessage) {
 	ch := admin.gm.config
 
 	for _, config := range c.Configs {
+		logger.Infof("Config: %v", config)
 		switch config.Name {
 		case "minTurnUpdate":
-			if ch.MinTurnUpdate > ch.MaxTurnUpdate {
-				admin.sendError("Min turn time is not lower than max turn time!")
-				break
-			}
-
 			value, err := strconv.Atoi(config.Value)
 			if err != nil {
 				admin.sendError("Unable to convert value to int")
+				break
+			}
+
+			if value > ch.MaxTurnUpdate {
+				admin.sendError("Min turn time is not lower than max turn time!")
+				break
 			}
 			ch.MinTurnUpdate = value
 
 		case "maxTurnUpdate":
-			if ch.MinTurnUpdate > ch.MaxTurnUpdate {
-				admin.sendError("Max turn time is lower than min turn time!")
-				break
-			}
-
 			value, err := strconv.Atoi(config.Value)
 			if err != nil {
 				admin.sendError("Unable to convert value to int")
+				break
+			}
+
+			if ch.MinTurnUpdate > value {
+				admin.sendError("Max turn time is lower than min turn time!")
+				break
 			}
 			ch.MaxTurnUpdate = value
 
@@ -139,6 +145,12 @@ func (admin *adminHandler) adminParseConfigUpdates(jsonObj *json.RawMessage) {
 			ch.mapSizeY = mapY
 
 		case "outerWalls":
+			value, err := strconv.Atoi(config.Value)
+			if err != nil {
+				admin.sendError("Unable to convert value to int")
+				break
+			}
+			ch.OuterWalls = value
 
 		default:
 			logger.Error("Unable to parse configLine %v", config.Name)
@@ -181,6 +193,8 @@ func (admin *adminHandler) logStatus() {
 }
 
 func (admin *adminHandler) sendError(message string) {
+	admin.mutex.Lock()
+
 	msg := Envelope{
 		Type:    "error",
 		Message: message,
@@ -194,6 +208,7 @@ func (admin *adminHandler) sendError(message string) {
 
 	logger.Errorf("Sending error: %s", message)
 	admin.qSend <- jsonString
+	admin.mutex.Unlock()
 }
 
 func (admin *adminHandler) writeSocket() {
