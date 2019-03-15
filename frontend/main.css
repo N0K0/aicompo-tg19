@@ -6,7 +6,7 @@
 *{
     margin: 0;
     padding: 0;
-    font-family: "VT323";
+    font-family: "VT323", serif;
 }
 body{
     background-color: #000000;
@@ -73,17 +73,17 @@ h1{
     display: block;
 }
 
-#gameover a, #setting a:hover, #menu a:hover{
+#gameover a, #setting a:hover, #menu a:hover, #lobby a:hover{
     cursor: pointer;
 }
 
-#gameover a:hover::before, #setting a:hover::before, #menu a:hover::before{
+#gameover a:hover::before, #setting a:hover::before, #menu a:hover::before, #lobby a:hover::before{
     content: ">";
     margin-right: 10px;
 }
 
 /* Menu Screen Style */
-#menu{
+#menu {
     position: relative;
     display: block;
     width: 500px;
@@ -170,6 +170,40 @@ h1{
     background-color: #FFF;
     color: #000;
 }
+
+#lobby {
+    display: none;
+    width: 500px;
+    margin-left: auto;
+    margin-right: auto;
+    padding-top: 35px;
+    padding-bottom: 85px;
+    font-size: 30px;
+    color: #FFF;
+    text-align: center;
+}
+
+#lobby h2{
+    margin-bottom: 15px;
+}
+
+#lobby p{
+    margin-top: 10px;
+}
+
+#lobby input{
+    display:none;
+}
+
+#lobby label{
+    cursor: pointer;
+}
+
+#lobby input:checked + label{
+    background-color: #FFF;
+    color: #000;
+}
+
 
 #logArea {
     color: #FFF

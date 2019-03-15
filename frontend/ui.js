@@ -7,7 +7,9 @@ let screen_snake = document.getElementById("snake");
 let screen_menu = document.getElementById("menu");
 let screen_gameover = document.getElementById("gameover");
 let screen_setting = document.getElementById("setting");
+let screen_lobby = document.getElementById("lobby");
 
+// Main menu
 let button_newgame_menu = document.getElementById("newgame_menu");
 button_newgame_menu.onclick = function(){newGame();};
 
@@ -26,6 +28,11 @@ button_setting_gameover.onclick = function(){showScreen(2)};
 let button_save_setting = document.getElementById("setting_save");
 button_save_setting.onclick = function () {save_settings()};
 
+let button_main_menu = document.getElementById("main_menu");
+button_main_menu.onclick = function () {showScreen(1)};
+
+let button_start_game = document.getElementById("start_game");
+button_start_game.onclick = function () {startGame()};
 // etc
 let ele_score = document.getElementById("score_value");
 
@@ -47,7 +54,7 @@ setMinTime("200");
 setMaxTime("800");
 setWall("1");
 
-showScreen("menu");
+showScreen(4);
 
 // --------------------
 // Settings
@@ -97,6 +104,12 @@ for(let i = 0; i < max_time_setting.length; i++){
     });
 }
 
+
+function newGame() {
+    showScreen(4);
+}
+
+
 // 0 for the game
 // 1 for the main menu
 // 2 for the settings screen
@@ -110,6 +123,7 @@ function showScreen(screen_opt){
             screen_menu.style.display = "none";
             screen_setting.style.display = "none";
             screen_gameover.style.display = "none";
+            screen_lobby.style.display = "none";
             break;
 
         case 1:
@@ -117,6 +131,7 @@ function showScreen(screen_opt){
             screen_menu.style.display = "block";
             screen_setting.style.display = "none";
             screen_gameover.style.display = "none";
+            screen_lobby.style.display = "none";
             break;
 
         case 2:
@@ -125,6 +140,7 @@ function showScreen(screen_opt){
             screen_menu.style.display = "none";
             screen_setting.style.display = "block";
             screen_gameover.style.display = "none";
+            screen_lobby.style.display = "none";
             break;
 
         case 3:
@@ -132,6 +148,15 @@ function showScreen(screen_opt){
             screen_menu.style.display = "none";
             screen_setting.style.display = "none";
             screen_gameover.style.display = "block";
+            screen_lobby.style.display = "none";
+            break;
+
+        case 4:
+            screen_snake.style.display = "none";
+            screen_menu.style.display = "none";
+            screen_setting.style.display = "none";
+            screen_gameover.style.display = "none";
+            screen_lobby.style.display = "block";
             break;
     }
 }
@@ -160,13 +185,14 @@ function save_settings(){
             {"name": "outerWalls",
                 "value": wall},
         ]
-
     };
 
     let envelope = {
         "type": "config",
         "message": payload
     };
+
+    console.log(envelope);
 
     admin_ws.conn.send(JSON.stringify(envelope));
     showScreen(1);
@@ -184,15 +210,19 @@ function import_settings(payload){
         switch(k){
             case "minTurnUpdate":
                 check_setting(min_time_setting, value.toString());
+                setMinTime(value.toString());
                 break;
             case "maxTurnUpdate":
                 check_setting(max_time_setting, value.toString());
+                setMaxTime(value.toString());
                 break;
             case "outerWalls":
                 check_setting(wall_setting, value.toString());
+                setWall(value.toString());
                 break;
             case "mapSize":
                 check_setting(map_size_setting, value);
+                setMapSize(value);
                 break;
         }
     }
@@ -204,33 +234,45 @@ function check_setting(elements, value) {
 
     for (let i = 0; i < elements.length; ++i) {
         console.log(elements[i]);
-        elements[i].checked = elements[i].value === value;
+        if (elements[i].value === value) {
+            elements[i].checked = true;
+
+        } else {
+            elements[i].checked = false;
+
+        }
     }
 
 }
 /////////////////////////////////////////////////////////////
 
 function setMapSize(value){
+    console.log("Setting value to " + value + " old value: " + map_size_str);
     map_size_str = value;
 }
 
 /////////////////////////////////////////////////////////////
 
 function setMinTime(value){
+    console.log("Setting value to " + value + " old value: " + time_min_turn);
     time_min_turn = value;
 }
 
 /////////////////////////////////////////////////////////////
 
 function setMaxTime(value){
+    console.log("Setting value to " + value + " old value: " + time_max_turn);
+
     time_max_turn = value;
 }
 
 
 
 /////////////////////////////////////////////////////////////
-function setWall(wall_value){
-    wall = wall_value;
+function setWall(value){
+    console.log("Setting value to " + value + " old value: " + wall);
+
+    wall = value;
     if(wall === 0){screen_snake.style.borderColor = "#606060";}
     if(wall === 1){screen_snake.style.borderColor = "#FFFFFF";}
 }

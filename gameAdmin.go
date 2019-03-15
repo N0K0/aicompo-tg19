@@ -83,7 +83,7 @@ func (admin *adminHandler) adminParseConfigUpdates(jsonObj *json.RawMessage) {
 	ch := admin.gm.config
 
 	for _, config := range c.Configs {
-		logger.Infof("Config: %v", config)
+		logger.Infof("Config to check: %v", config)
 		switch config.Name {
 		case "minTurnUpdate":
 			value, err := strconv.Atoi(config.Value)
@@ -206,7 +206,7 @@ func (admin *adminHandler) sendError(message string) {
 		return
 	}
 
-	logger.Errorf("Sending error: %s", message)
+	logger.Infof("Sending error: %s", message)
 	admin.qSend <- jsonString
 	admin.mutex.Unlock()
 }
