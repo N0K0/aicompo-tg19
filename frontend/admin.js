@@ -51,6 +51,10 @@ AdminConnection.prototype.parseAdminEvent = function(evt) {
         case "config_push":
             import_settings(json.message);
             break;
+
+        case "players":
+            update_players(json.message);
+            break;
         default:
             console.log("Unable to parse admin message");
             break;

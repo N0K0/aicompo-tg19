@@ -33,6 +33,12 @@ button_main_menu.onclick = function () {showScreen(1)};
 
 let button_start_game = document.getElementById("start_game");
 button_start_game.onclick = function () {startGame()};
+
+// Lobby
+let lobby_player_div = document.getElementById("players");
+let lobby_player_number = document.getElementById("num_players");
+
+
 // etc
 let ele_score = document.getElementById("score_value");
 
@@ -226,6 +232,19 @@ function import_settings(payload){
                 break;
         }
     }
+}
+
+function update_players(message) {
+    console.log("Updating the players state");
+    let players = JSON.parse(message);
+    console.log(players);
+
+    update_player_ui(players);
+
+}
+
+function update_player_ui(players_json){
+
 }
 
 function check_setting(elements, value) {

@@ -41,6 +41,7 @@ func (admin *adminHandler) run() {
 			break
 		case <-loggerTicker.C:
 			admin.logStatus()
+			admin.pushPlayers()
 			break
 		}
 	}
@@ -180,7 +181,6 @@ func (admin *adminHandler) adminPushConfig() {
 	}
 
 	logger.Info(string(jsonString))
-
 	admin.qSend <- jsonString
 }
 
@@ -190,6 +190,41 @@ func (admin *adminHandler) logStatus() {
 	`
 	numPlayers := len(admin.gm.players)
 	logger.Infof(statusString, numPlayers)
+}
+
+func (admin *adminHandler) pushPlayers() {
+	logger.Info("Push players")
+
+	logger.Infof("%v", admin.gm.players)
+
+	tmpPlayers := make(map[string]*Player)
+
+	for k := range admin.gm.players {
+		tmpPlayers[k.Username] = k
+	}
+
+	jsonString, err := json.Marshal(tmpPlayers)
+	if err != nil {
+		admin.sendError("Problems with creating message")
+		return
+	}
+
+	env := Envelope{
+		Type:    "players",
+		Message: string(jsonString),
+	}
+
+	logger.Infof("String: %s", jsonString)
+	logger.Infof("String: %s", env)
+
+	jsonString, err = json.Marshal(env)
+	if err != nil {
+		admin.sendError("Problems with creating message")
+		return
+	}
+
+	logger.Info(string(jsonString))
+	admin.qSend <- jsonString
 }
 
 func (admin *adminHandler) sendError(message string) {

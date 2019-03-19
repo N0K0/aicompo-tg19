@@ -17,7 +17,6 @@
             <!-- Game Over Screen -->
             <div id="gameover">
                 <h2>Game Over</h2>
-                <p>press <span style="background-color: #FFFFFF; color: #000000">space</span> to begin a</p>
                 <a id="newgame_gameover">new game</a>
                 <a id="setting_gameover">settings</a>
             </div>
@@ -76,8 +75,13 @@
             <!-- Game lobby screen -->
             <div id="lobby">
                 <h2>Lobby</h2>
-
-                <a id="main_menu">Back</a>
+                <div id ="players">
+                    <label id="num_players"> Players: 0</label>
+                    <div class="player">
+                        Waiting for players!
+                    </div>
+                </div>
+                <a id="main_menu">Back</a><br>
                 <a id="start_game">Start game!</a>
             </div>
         </div>

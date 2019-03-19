@@ -22,28 +22,28 @@ class Player{
 
 Player.prototype.playerConnect = function() {
     if(this.connection != null){
-        toLog("Client1 already connected!");
+        console.log("Client1 already connected!");
     }
-    toLog("Connecting as: " + this.name);
+    console.log("Connecting as: " + this.name);
     let player = this;
     this.connection = new WebSocket("ws://localhost:8080/ws");
     // noinspection JSUnusedLocalSymbols
     this.connection.onopen = function(evt) {
         console.log("OPEN");
-        toLog("Websocket Open");
+        console.log("Websocket Open");
         player.updateUsername()
     };
     // noinspection JSUnusedLocalSymbols
     this.connection.onclose = function(evt) {
-        toLog("Websocket Closed");
+        console.log("Websocket Closed");
         player.connection = null;
     };
     this.connection.onmessage = function(evt) {
-        toLog(evt.data);
+        console.log(evt.data);
         console.log(evt);
     };
     this.connection.onerror = function(evt) {
-        toLog("ERROR: " + evt.data);
+        console.log("ERROR: " + evt.data);
     };
 };
 
@@ -54,7 +54,7 @@ Player.prototype.disconnect = function() {
 };
 
 Player.prototype.updateUsername = function() {
-    toLog("Sending username: " + this.name);
+    console.log("Sending username: " + this.name);
     let payload = {
         type: "username",
         command: this.name,
@@ -106,7 +106,7 @@ function send_invalid(playerID) {
 }
 
 function sendCommand(player,type, command) {
-    toLog("Player ("+  player.name + "): " + command);
+    console.log("Player ("+  player.name + "): " + command);
     let payload = {
         type:  type,
         value: command,
@@ -116,7 +116,7 @@ function sendCommand(player,type, command) {
 
 function create_simple_player(){
     create_player();
-    toLog("Players: "  +Object.keys(local_players).length)
+    console.log("Players: "  +Object.keys(local_players).length)
 }
 
 function makeid() {
