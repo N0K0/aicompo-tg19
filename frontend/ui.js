@@ -34,9 +34,7 @@ button_main_menu.onclick = function () {showScreen(1)};
 let button_start_game = document.getElementById("start_game");
 button_start_game.onclick = function () {startGame()};
 
-// Lobby
-let lobby_player_div = document.getElementById("players");
-let lobby_player_number = document.getElementById("num_players");
+
 
 
 // etc
@@ -244,6 +242,47 @@ function update_players(message) {
 }
 
 function update_player_ui(players_json){
+    // Lobby
+    let lobby_player_div = document.getElementById("players");
+    let lobby_no_player_div = document.getElementById("no_players");
+    let lobby_player_number = document.getElementById("num_players");
+
+    let cloned_player_div = lobby_player_div.cloneNode(false);
+
+
+    if(Object.getOwnPropertyNames(players_json).length  === 0 ){
+        console.log("No players!");
+        lobby_no_player_div.style.display = "block";
+        lobby_player_div.style.display = "none";
+        return
+    }
+
+    console.log("Players: ",Object.keys(players_json).length);
+    let label_num_player = document.createElement("label");
+    label_num_player.id = "num_players";
+    label_num_player.innerText = "Players: " + Object.keys(players_json).length.toString();
+
+    cloned_player_div.appendChild(label_num_player);
+
+    for( let p in players_json) {
+        let v = players_json[p];
+
+        console.log(v);
+
+        let tmp_div_player = document.createElement("div");
+        tmp_div_player.id = "player";
+        tmp_div_player.innerText= v.username;
+        cloned_player_div.appendChild(tmp_div_player)
+    }
+
+    console.log(cloned_player_div);
+    console.log(cloned_player_div.innerHTML);
+    lobby_player_div.replaceWith(cloned_player_div);
+
+    cloned_player_div.style.display = "block";
+    lobby_no_player_div.style.display = "none";
+    lobby_player_div.style.display = "block";
+
 
 }
 

@@ -67,7 +67,8 @@ type GameHandler struct {
 	RoundNumber int
 	GameMap     GameMap
 
-	mapLock sync.Mutex
+	mapLock     sync.Mutex
+	playersLock sync.Mutex
 }
 
 func newGameHandler() *GameHandler {
@@ -94,8 +95,10 @@ func (g *GameHandler) run() {
 	for {
 		select {
 		case player := <-g.register:
+			g.playersLock.Lock()
 			g.players[player] = true
 			logger.Infof("Players: %v", len(g.players))
+			g.playersLock.Unlock()
 			go player.run()
 		case player := <-g.unregister:
 			logger.Infof("Unregistering %v", player)

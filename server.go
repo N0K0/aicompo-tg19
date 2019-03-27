@@ -51,6 +51,8 @@ func wsConnector(manager *Managers, w http.ResponseWriter, r *http.Request) {
 		size:         0,
 	}
 
+	manager.am.pushPlayers()
+
 	logger.Infof("New socket from %v", ws.RemoteAddr())
 }
 
