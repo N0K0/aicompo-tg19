@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"strconv"
 	"strings"
 	"sync"
@@ -64,7 +65,15 @@ func (admin *adminHandler) adminParseCommand(jsonObj []byte) {
 		admin.adminPushConfig()
 	case "game_start":
 		break
+	case "kick":
+		err := admin.kickPlayer(&c.Message)
+		if err != nil {
+			logger.Error(err.Error())
+			admin.sendError(err.Error())
+			return
+		}
 	default:
+		logger.Errorf("Unable to parse message. Got %v", c.Type)
 		break
 	}
 
@@ -227,6 +236,21 @@ func (admin *adminHandler) pushPlayers() {
 
 	logger.Info(string(jsonString))
 	admin.qSend <- jsonString
+}
+
+func (admin *adminHandler) kickPlayer(jsonObj *json.RawMessage) error {
+	playerName := string(*jsonObj)
+	playerName = playerName[1 : len(playerName)-1]
+	logger.Infof("Kicking %v", playerName)
+
+	for player := range admin.gm.players {
+		if playerName == player.Username {
+			admin.gm.unregister <- player
+			return nil
+		}
+	}
+	logger.Infof("Unable to find target for kicking")
+	return errors.New("unable to find the player you want to kick")
 }
 
 func (admin *adminHandler) sendError(message string) {

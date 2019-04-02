@@ -136,6 +136,18 @@ h1{
     display: block;
 }
 
+#player_kick {
+    user-select: none;
+    -moz-user-select: none;
+    margin-left: 10px;
+}
+
+#player_kick:hover {
+    background-color: #FFF;
+    color: #000;
+    cursor: pointer;
+}
+
 /* Game Over Screen Style */
 
 #gameover{
@@ -210,9 +222,12 @@ h1{
     display:none;
 }
 
+/*
+
 #lobby label{
     cursor: pointer;
 }
+*/
 
 #lobby input:checked + label{
     background-color: #FFF;

@@ -271,8 +271,24 @@ function update_player_ui(players_json){
 
         let tmp_div_player = document.createElement("div");
         tmp_div_player.id = "player";
-        tmp_div_player.innerText= v.username;
-        cloned_player_div.appendChild(tmp_div_player)
+
+        let tmp_player_name = document.createElement("label");
+        tmp_player_name.innerText = v.username;
+        tmp_player_name.id = "player_name";
+
+        let tmp_player_kick = document.createElement("label");
+        tmp_player_kick.innerText = "[X]";
+        tmp_player_kick.id = "player_kick";
+
+
+        tmp_div_player.appendChild(tmp_player_name);
+        tmp_div_player.appendChild(tmp_player_kick);
+
+        tmp_player_kick.onclick = function() {
+            admin_ws.kickPlayer( v.username)
+        };
+
+        cloned_player_div.appendChild(tmp_div_player);
     }
 
     console.log(cloned_player_div);

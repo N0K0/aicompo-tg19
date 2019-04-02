@@ -102,9 +102,8 @@ func (g *GameHandler) run() {
 			go player.run()
 		case player := <-g.unregister:
 			logger.Infof("Unregistering %v", player)
+
 			delete(g.players, player)
-			close(player.qRecv)
-			close(player.qSend)
 			err := player.conn.Close()
 			if err != nil {
 				logger.Info("Problems closing websocket")

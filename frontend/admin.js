@@ -61,34 +61,40 @@ AdminConnection.prototype.parseAdminEvent = function(evt) {
     }
 };
 
-AdminConnection.prototype.startSystem = function() {
-    if(admin_ws == null) {
-        console.log("No socket found... rejecting this call and trying to reconnect");
-        this.adminConnect();
-        return false;
-    }
+AdminConnection.prototype.startSystem = function () {
     console.log("Admin: Starting system");
-    this.sendCommand("start");
+
+
+    let payload = {
+        type: "start",
+        message: ""
+    };
+
+    this.conn.send(JSON.stringify(payload));
+
 };
 
 AdminConnection.prototype.pauseSystem = function() {
-    if(admin_ws == null) {
-        console.log("No socket found... rejecting this call and trying to reconnect");
-        this.adminConnect();
-        return false;
-    }
     console.log("Admin: pauseSystem");
-    this.sendCommand("pause");
+
+    let payload = {
+        type: "pause",
+        message: ""
+    };
+
+    this.conn.send(JSON.stringify(payload));
 };
 
 AdminConnection.prototype.restartSystem = function() {
-    if(admin_ws == null) {
-        console.log("No socket found... rejecting this call and trying to reconnect");
-        this.adminConnect();
-        return false;
-    }
     console.log("Admin: restartSystem");
-    this.sendCommand("restart");
+
+    let payload = {
+        type: "restart",
+        message: ""
+    };
+
+    this.conn.send(JSON.stringify(payload));
+
 };
 
 
@@ -99,7 +105,7 @@ AdminConnection.prototype.sendInvalid = function() {
     let payload = {
         invalid: "test"
     };
-    admin_ws.send(JSON.stringify(payload))
+    this.conn.send(JSON.stringify(payload))
 };
 
 AdminConnection.prototype.sendCommand = function(command) {
@@ -107,7 +113,20 @@ AdminConnection.prototype.sendCommand = function(command) {
     let payload = {
         command: command,
     };
-    admin_ws.send(JSON.stringify(payload));
+    this.conn.send(JSON.stringify(payload));
+};
+
+
+AdminConnection.prototype.kickPlayer = function(player) {
+    console.log("Kicking player: " + player);
+
+    let payload = {
+        type: "kick",
+        message: player
+    };
+
+    this.conn.send(JSON.stringify(payload))
+
 };
 
 
