@@ -15,6 +15,7 @@ import (
 // adminHandler takes care of starting the game and is used for spectating the events. Used by the web interface
 type adminHandler struct {
 	gm   *GameHandler
+	man  *Managers
 	conn *websocket.Conn
 
 	qSend chan []byte
@@ -63,10 +64,15 @@ func (admin *adminHandler) adminParseCommand(jsonObj []byte) {
 		admin.adminParseConfigUpdates(&c.Message)
 	case "config_get":
 		admin.adminPushConfig()
-	case "game_start":
+	case "start":
+		admin.gm.startGame()
+		break
+	case "pause":
+		break
+	case "restart":
 		break
 	case "kick":
-		err := admin.kickPlayer(&c.Message)
+		err := admin.kickPlayer(string(c.Message))
 		if err != nil {
 			logger.Error(err.Error())
 			admin.sendError(err.Error())
@@ -238,8 +244,7 @@ func (admin *adminHandler) pushPlayers() {
 	admin.qSend <- jsonString
 }
 
-func (admin *adminHandler) kickPlayer(jsonObj *json.RawMessage) error {
-	playerName := string(*jsonObj)
+func (admin *adminHandler) kickPlayer(playerName string) error {
 	playerName = playerName[1 : len(playerName)-1]
 	logger.Infof("Kicking %v", playerName)
 

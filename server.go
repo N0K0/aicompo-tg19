@@ -70,6 +70,7 @@ func wsAdminConnector(manager *Managers, w http.ResponseWriter, r *http.Request)
 		logger.Info("Creating new adminmanager")
 		manager.am = &adminHandler{
 			gm:    manager.gm,
+			man:   manager,
 			conn:  ws,
 			qRecv: make(chan []byte, 10),
 			qSend: make(chan []byte, 10),
@@ -133,6 +134,8 @@ func main() {
 		nil,
 		nil,
 	}
+
+	gameHandler.man = m
 
 	go gameHandler.run()
 

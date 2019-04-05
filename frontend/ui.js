@@ -32,7 +32,7 @@ let button_main_menu = document.getElementById("main_menu");
 button_main_menu.onclick = function () {showScreen(1)};
 
 let button_start_game = document.getElementById("start_game");
-button_start_game.onclick = function () {startGame()};
+button_start_game.onclick = function () {admin_ws.startSystem()};
 
 
 

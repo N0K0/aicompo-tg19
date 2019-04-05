@@ -11,19 +11,11 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-const (
-	// TODO: This is getting moved into GameConfigHolder
-	// For which when a turn executes regardless of if all has sent their commands
-	turnTimeMax = 7500 * time.Millisecond
-	turnTimeMin = 2000 * time.Millisecond
-
-	// Other config. TODO: Look into flags
-	gameRounds     = 5
-	contWithWinner = true // Should end game when winners is clear (for example 3/5 wins already)
-
-)
-
 type gamestate int
+type Food struct {
+	X int
+	Y int
+}
 
 const (
 	pregame gamestate = iota
@@ -49,8 +41,11 @@ func (gs gamestate) MarshalText() (text []byte, err error) {
 type GameHandler struct {
 	// Meta info
 	players map[*Player]bool
+	Foods   []Food
 	Status  gamestate
 	config  *GameConfigHolder
+
+	man *Managers
 
 	gameView *gameViewer
 
@@ -65,7 +60,8 @@ type GameHandler struct {
 	// Game info
 	GameNumber  int
 	RoundNumber int
-	GameMap     GameMap
+	GameMap     GameMapStr
+	CurrentTick int
 
 	mapLock     sync.Mutex
 	playersLock sync.Mutex
@@ -73,19 +69,22 @@ type GameHandler struct {
 
 func newGameHandler() *GameHandler {
 	logger.Info("New GameHandler")
-	return &GameHandler{
-		players:       make(map[*Player]bool),
-		Status:        pregame,
-		timerDeadline: time.NewTimer(turnTimeMax),
-		timerMinline:  time.NewTimer(turnTimeMin),
-		register:      make(chan *Player, 1),
-		unregister:    make(chan *Player, 1),
-		adminChan:     make(chan string, 1),
-		GameNumber:    0,
-		RoundNumber:   0,
-		GameMap:       baseGameMap(),
-		config:        NewConfigHolder(),
+	gh := &GameHandler{
+		players:     make(map[*Player]bool),
+		Status:      pregame,
+		register:    make(chan *Player, 1),
+		unregister:  make(chan *Player, 1),
+		adminChan:   make(chan string, 1),
+		GameNumber:  0,
+		RoundNumber: 0,
+		GameMap:     baseGameMap(),
+		config:      NewConfigHolder(),
 	}
+
+	gh.timerDeadline = time.NewTimer(gh.config.turnTimeMin)
+	gh.timerMinline = time.NewTimer(gh.config.turnTimeMax)
+
+	return gh
 }
 
 func (g *GameHandler) run() {
@@ -114,7 +113,7 @@ func (g *GameHandler) run() {
 
 func (g *GameHandler) gameState() {
 	for {
-		time.Sleep(1 * time.Nanosecond)
+		time.Sleep(1 * time.Millisecond)
 		switch g.Status {
 		case pregame:
 			break
@@ -144,6 +143,10 @@ func (g *GameHandler) running() {
 	}
 }
 
+func (g *GameHandler) roundDone() {
+	time.Sleep(time.Nanosecond)
+}
+
 func (g *GameHandler) gameDone() {
 	time.Sleep(time.Nanosecond)
 }
@@ -152,8 +155,8 @@ func (g *GameHandler) gameDone() {
 // It also resets the timers we need
 func (g *GameHandler) newTurn() {
 	// Sets the new timers
-	g.timerDeadline.Reset(turnTimeMax)
-	g.timerMinline.Reset(turnTimeMin)
+	g.timerDeadline.Reset(g.config.turnTimeMax)
+	g.timerMinline.Reset(g.config.turnTimeMin)
 }
 
 // execTurn resets
@@ -163,18 +166,96 @@ func (g *GameHandler) execTurn() {
 	g.mapLock.Unlock()
 }
 
+func (g *GameHandler) startGame() {
+	// Kick all players without names
+	logger.Info("Starting game")
+	g.playersLock.Lock()
+
+	logger.Info("Kicking all players without name")
+	for player := range g.players {
+		if player.Username == "" {
+			g.man.gm.unregister <- player
+		}
+	}
+	g.playersLock.Unlock()
+
+	g.initGame()
+	g.initRound()
+
+	logger.Info("Starting the rest of the system")
+	g.Status = running
+}
+
 // Things we need:
 //	Players
 //	Scores
 //	TurnNewConfigHolder
 //	Round
 
+// This function sets all the values that should last for an entire game
+func (g *GameHandler) initGame() {
+	// TODO: Fill out what is missing
+	g.RoundNumber = 0
+
+}
+
+// This function sets all the values that should last for an entire round
+func (g *GameHandler) initRound() {
+	// TODO: finish initRound
+	logger.Info("Initializing new round")
+	// Reset ticks
+	g.CurrentTick = 0
+
+	// TODO: Make this work properly, make it so that we can pass a proper map, not just reinint this one
+	g.GameMap = baseGameMap()
+
+	// Set pos of players
+	logger.Info("Init players")
+	for player := range g.players {
+		logger.Infof("p: %s", player.Username)
+		x, y, err := g.GameMap.findEmptySpot(false)
+		if err != nil {
+			panic("Could not init round, not enough space to start new round")
+		}
+		logger.Infof("pos: %v %v", x, y)
+
+		player.PosX = []int{x, x, x}
+		player.PosY = []int{y, y, y}
+		player.size = 3
+		player.roundScore = 0
+
+	}
+
+	// Set food
+	logger.Infof("Setting %v foods", g.config.targetFood)
+	food := 0
+	for food < g.config.targetFood {
+		x, y, err := g.GameMap.findEmptySpot(false)
+		logger.Infof("pos: %v %v", x, y)
+
+		if err != nil {
+			panic("Could not init round, not enough space to start new round")
+		}
+		food += 1
+
+		err = g.GameMap.setTile(x, y, blockFood)
+		if err != nil {
+			panic("Could not init round, not enough space to start new round")
+		}
+		g.Foods = append(g.Foods, Food{x, y})
+	}
+
+	logger.Infof("Foods: %v", g.Foods)
+
+}
+
+// Creates the status object used by the game frontend
 func (g *GameHandler) generateStatusJson() []byte {
 
-	tmpPlayers := make(map[string]bool)
+	tmpPlayers := make(map[string]Player)
 
 	for k := range g.players {
-		tmpPlayers[k.Username] = true
+		tmpPlayers[k.Username] = *k
 	}
 
 	status := StatusObject{
@@ -197,6 +278,15 @@ func NewConfigHolder() *GameConfigHolder {
 		MaxTurnUpdate: 800,
 		MapSize:       "0x0",
 		OuterWalls:    1,
+
+		turnTimeMax: 7500 * time.Millisecond,
+		turnTimeMin: 2000 * time.Millisecond,
+
+		GameRounds:     5,
+		RoundTicks:     10000,
+		targetFood:     2,    // The number of food we are trying to have on the map at once
+		contWithWinner: true, // Should end game when winners is clear (for example 3/5 wins already)
+
 	}
 }
 
@@ -224,7 +314,11 @@ type Player struct {
 
 	// GameData
 	// X,Y is two lists which when zipped creates the coordinates of the snake
-	PosX []int
-	PosY []int
-	size int
+	PosX       []int
+	PosY       []int
+	HeadX      int
+	HeadY      int
+	size       int
+	totalScore int
+	roundScore int
 }

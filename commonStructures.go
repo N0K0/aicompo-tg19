@@ -1,6 +1,9 @@
 package main
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"time"
+)
 
 // Command struct defines how commands from players/admin should be formatted
 type Command struct {
@@ -27,7 +30,7 @@ type ConfigUpdate struct {
 
 type StatusObject struct {
 	NumPlayers int
-	Players    map[string]bool
+	Players    map[string]Player
 	GameStatus GameHandler
 }
 
@@ -38,4 +41,12 @@ type GameConfigHolder struct {
 	MapSize       string `json:"mapSize"`
 	mapSizeX      int
 	mapSizeY      int
+
+	GameRounds int
+	RoundTicks int
+	targetFood int
+
+	contWithWinner bool
+	turnTimeMax    time.Duration
+	turnTimeMin    time.Duration
 }
