@@ -18,19 +18,25 @@ type Food struct {
 }
 
 const (
-	pregame gamestate = iota
-	running gamestate = iota
-	done    gamestate = iota
+	pregame   gamestate = iota
+	initRound gamestate = iota
+	running   gamestate = iota
+	roundDone gamestate = iota
+	gameDone  gamestate = iota
 )
 
 func (gs gamestate) MarshalText() (text []byte, err error) {
 	switch gs {
 	case pregame:
 		return []byte("pregame"), nil
+	case initRound:
+		return []byte("init_round"), nil
 	case running:
 		return []byte("running"), nil
-	case done:
-		return []byte("done"), nil
+	case roundDone:
+		return []byte("round_done"), nil
+	case gameDone:
+		return []byte("game_done"), nil
 	default:
 		return []byte(""), errors.New("game state invalid")
 	}
@@ -72,12 +78,11 @@ func newGameHandler() *GameHandler {
 	gh := &GameHandler{
 		players:     make(map[*Player]bool),
 		Status:      pregame,
-		register:    make(chan *Player, 1),
-		unregister:  make(chan *Player, 1),
-		adminChan:   make(chan string, 1),
+		register:    make(chan *Player, 5),
+		unregister:  make(chan *Player, 5),
+		adminChan:   make(chan string, 5),
 		GameNumber:  0,
 		RoundNumber: 0,
-		GameMap:     baseGameMap(),
 		config:      NewConfigHolder(),
 	}
 
@@ -96,14 +101,21 @@ func (g *GameHandler) run() {
 		case player := <-g.register:
 			g.playersLock.Lock()
 			g.players[player] = true
-			logger.Infof("Players: %v", len(g.players))
 			g.playersLock.Unlock()
 			go player.run()
+
+			if g.man.am == nil {
+				continue
+			}
+
+			g.man.am.pushPlayers()
 		case player := <-g.unregister:
 			logger.Infof("Unregistering %v", player)
 
 			delete(g.players, player)
 			err := player.conn.Close()
+			g.man.am.pushPlayers()
+
 			if err != nil {
 				logger.Info("Problems closing websocket")
 			}
@@ -169,11 +181,16 @@ func (g *GameHandler) execTurn() {
 func (g *GameHandler) startGame() {
 	// Kick all players without names
 	logger.Info("Starting game")
+	if g.Status != pregame {
+		logger.Error("Was not in pregame state? aborting")
+		return
+	}
+
 	g.playersLock.Lock()
 
 	logger.Info("Kicking all players without name")
 	for player := range g.players {
-		if player.Username == "" {
+		if player.status == NoUsername {
 			g.man.gm.unregister <- player
 		}
 	}
@@ -212,7 +229,6 @@ func (g *GameHandler) initRound() {
 	g.CurrentTick = 0
 
 	// TODO: Make this work properly, make it so that we can pass a proper map, not just reinint this one
-	g.GameMap = baseGameMap()
 
 	// Set pos of players
 	logger.Info("Init players")
@@ -289,7 +305,7 @@ func NewConfigHolder() *GameConfigHolder {
 
 		GameRounds:     5,
 		RoundTicks:     10000,
-		targetFood:     2,    // The number of food we are trying to have on the map at once
+		targetFood:     20,   // The number of food we are trying to have on the map at once
 		contWithWinner: true, // Should end game when winners is clear (for example 3/5 wins already)
 
 	}
@@ -299,10 +315,14 @@ func NewConfigHolder() *GameConfigHolder {
 // There should be an 1:1 ration between those entities
 type Player struct {
 	// The websocket to the client
-	conn *websocket.Conn
+	conn     *websocket.Conn
+	connLock sync.Mutex
 
 	// The Username of the client
 	Username string `json:"username"`
+
+	// Color in a format that
+	Color string
 
 	// The status of the connection
 	status Status

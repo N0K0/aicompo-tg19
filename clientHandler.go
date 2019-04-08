@@ -11,10 +11,10 @@ import (
 
 const (
 	// Time allowed to write a message to the peer.
-	writeWait = 20 * time.Second
+	writeWait = 3 * time.Second
 
 	// Time allowed to read the next pong message from the peer.
-	pongWait = 120 * time.Second
+	pongWait = 3 * time.Second
 
 	// Send pings to peer with this period. Must be less than pongWait.
 	pingPeriod = (pongWait * 9) / 10
@@ -34,8 +34,9 @@ func (p *Player) writePump() {
 	logger.Info("Write Socket")
 	pingTicker := time.NewTicker(pingPeriod)
 	defer func() {
-		logger.Info("Player dead")
+		logger.Infof("Player %v not answering pings. Removing from game", p.Username)
 		pingTicker.Stop()
+		p.gmUnregister <- p
 	}()
 	for {
 		select {
@@ -46,10 +47,12 @@ func (p *Player) writePump() {
 			}
 			if !ok {
 				// Client closed connection.
+				p.connLock.Lock()
 				err := p.conn.WriteMessage(websocket.CloseMessage, []byte{})
 				if err != nil {
 					logger.Info("Client closed connection")
 				}
+				p.connLock.Unlock()
 				return
 			}
 
@@ -75,12 +78,16 @@ func (p *Player) writePump() {
 				return
 			}
 		case <-pingTicker.C:
-			logger.Info("ping ticker")
+			//logger.Info("ping ticker")
 			err := p.conn.SetWriteDeadline(time.Now().Add(writeWait))
 			if err != nil {
 				logger.Info("Error set deadline Ticker")
 			}
-			if err := p.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
+			p.connLock.Lock()
+			err = p.conn.WriteMessage(websocket.PingMessage, nil)
+			p.connLock.Unlock()
+
+			if err != nil {
 				return
 			}
 		}
@@ -171,6 +178,7 @@ func (p *Player) sendError(message string) {
 
 func (p *Player) setUsername(cmd *Command) {
 	username := cmd.Value
+	logger.Info("Setting username %v", username)
 
 	if len(username) > 14 {
 		p.sendError("Username is too long! Max length 14")
@@ -185,6 +193,13 @@ func (p *Player) setUsername(cmd *Command) {
 	p.Username = username
 	p.status = ReadyToPlay
 	logger.Infof("Player given name: %v", username)
+}
+
+// Takes in an arbitrary string. Is passed to the frontend to be used with the ctx.fillStyle property
+func (p *Player) setColor(cmd *Command) {
+	color := cmd.Value
+	p.Color = color
+	logger.Infof("Setting color for %v '%v'", p.Username, p.Color)
 }
 
 func (p *Player) run() {

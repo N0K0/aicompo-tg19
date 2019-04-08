@@ -33,7 +33,7 @@ func (admin *adminHandler) run() {
 	go admin.readSocket()
 	go admin.writeSocket()
 
-	loggerTicker := time.NewTicker(10 * time.Second)
+	loggerTicker := time.NewTicker(500 * time.Millisecond)
 	for {
 		time.Sleep(1 * time.Millisecond)
 		select {
@@ -208,12 +208,13 @@ func (admin *adminHandler) logStatus() {
 }
 
 func (admin *adminHandler) pushPlayers() {
+	//logger.Info("Pushing players")
 	admin.gm.playersLock.Lock()
 	defer admin.gm.playersLock.Unlock()
 
-	logger.Info("Push players")
+	//logger.Info("Push players")
 
-	logger.Infof("%v", admin.gm.players)
+	//logger.Infof("%v", admin.gm.players)
 
 	tmpPlayers := make(map[string]*Player)
 	for k := range admin.gm.players {
@@ -231,8 +232,8 @@ func (admin *adminHandler) pushPlayers() {
 		Message: string(jsonString),
 	}
 
-	logger.Infof("String: %s", jsonString)
-	logger.Infof("String: %s", env)
+	//logger.Infof("String: %s", jsonString)
+	//logger.Infof("String: %s", env)
 
 	jsonString, err = json.Marshal(env)
 	if err != nil {
@@ -240,7 +241,7 @@ func (admin *adminHandler) pushPlayers() {
 		return
 	}
 
-	logger.Info(string(jsonString))
+	//logger.Info(string(jsonString))
 	admin.qSend <- jsonString
 }
 
@@ -286,6 +287,10 @@ func (admin *adminHandler) writeSocket() {
 	for {
 		select {
 		case message, ok := <-admin.qSend:
+			if admin.conn == nil {
+				return
+			}
+
 			err := admin.conn.SetWriteDeadline(time.Now().Add(writeWait))
 			if err != nil {
 				logger.Info("SetWrDeadline err")
@@ -323,7 +328,7 @@ func (admin *adminHandler) writeSocket() {
 				return
 			}
 		case <-admin.ticker.C:
-			logger.Info("Admin ping ticker")
+			//logger.Info("Admin ping ticker")
 			err := admin.conn.SetWriteDeadline(time.Now().Add(writeWait))
 			if err != nil {
 				logger.Info("Error set deadline Ticker")

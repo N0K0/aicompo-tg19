@@ -76,7 +76,7 @@ func (gv *gameViewer) writePump() {
 				return
 			}
 		case <-gv.pingTicker.C:
-			logger.Info("ping ticker")
+			//logger.Info("ping ticker")
 			err := gv.conn.SetWriteDeadline(time.Now().Add(writeWait))
 			if err != nil {
 				logger.Info("Error set deadline Ticker")
