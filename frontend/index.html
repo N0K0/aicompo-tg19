@@ -11,7 +11,17 @@
 <body>
 
     <div id="game">
-        <canvas class="wrap" id="snake" width="800" height="800" tabindex="1"></canvas>
+
+        <div>
+            <canvas class="wrap" id="snake" width="800" height="800" tabindex="1"></canvas>
+            <div id="scoreboard"></div>
+            <div id="ticks"></div>
+            <div></div>
+            <div></div>
+            <div></div>
+
+        </div>
+
 
         <div id="ui">
             <!-- Game Over Screen -->
@@ -68,7 +78,9 @@
             <!-- Main Menu Screen -->
             <div id="menu">
                 <h2>Snake</h2>
+                <!-- newGame()  -->
                 <a id="newgame_menu">new game</a>
+                <!-- showScreen(2) -->
                 <a id="setting_menu">settings</a>
             </div>
 
@@ -87,7 +99,9 @@
                         Waiting for players!
                     </div>
                 </div>
+                <!-- main_menu -->
                 <a id="main_menu">Back</a><br>
+                <!-- admin_ws.startSystem -->
                 <a id="start_game">Start game!</a>
             </div>
         </div>

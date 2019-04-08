@@ -166,8 +166,6 @@ function showScreen(screen_opt){
 }
 
 function fetch_settings(){
-    // Todo make front fetch settings from backend
-
     let envelope = {
         "type": "config_get",
         "message": ""
@@ -235,7 +233,6 @@ function import_settings(payload){
 function update_players(message) {
     console.log("Updating the players state");
     let players = JSON.parse(message);
-    console.log(players);
 
     update_player_ui(players);
 
@@ -251,13 +248,11 @@ function update_player_ui(players_json){
 
 
     if(Object.getOwnPropertyNames(players_json).length  === 0 ){
-        console.log("No players!");
         lobby_no_player_div.style.display = "block";
         lobby_player_div.style.display = "none";
         return
     }
 
-    console.log("Players: ",Object.keys(players_json).length);
     let label_num_player = document.createElement("label");
     label_num_player.id = "num_players";
     label_num_player.innerText = "Players: " + Object.keys(players_json).length.toString();
@@ -267,7 +262,6 @@ function update_player_ui(players_json){
     for( let p in players_json) {
         let v = players_json[p];
 
-        console.log(v);
 
         let tmp_div_player = document.createElement("div");
         tmp_div_player.id = "player";
@@ -291,8 +285,6 @@ function update_player_ui(players_json){
         cloned_player_div.appendChild(tmp_div_player);
     }
 
-    console.log(cloned_player_div);
-    console.log(cloned_player_div.innerHTML);
     lobby_player_div.replaceWith(cloned_player_div);
 
     cloned_player_div.style.display = "block";
@@ -303,11 +295,8 @@ function update_player_ui(players_json){
 }
 
 function check_setting(elements, value) {
-    console.log("Checking value", value);
-    console.log(elements);
 
     for (let i = 0; i < elements.length; ++i) {
-        console.log(elements[i]);
         if (elements[i].value === value) {
             elements[i].checked = true;
 

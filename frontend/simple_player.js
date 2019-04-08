@@ -15,6 +15,7 @@ function create_player() {
 class Player{
     constructor() {
         this.name = makeid();
+        this.color = getRandomRgb();
         this.connection = null;
     }
 }
@@ -31,7 +32,8 @@ Player.prototype.playerConnect = function() {
     this.connection.onopen = function(evt) {
         console.log("OPEN");
         console.log("Websocket Open");
-        player.updateUsername()
+        player.updateUsername();
+        player.updateColor();
     };
     // noinspection JSUnusedLocalSymbols
     this.connection.onclose = function(evt) {
@@ -61,6 +63,26 @@ Player.prototype.updateUsername = function() {
     };
     this.connection.send(JSON.stringify(payload));
 };
+
+Player.prototype.updateColor = function() {
+    console.log("Sending color: " + this.color);
+
+    let payload = {
+        type: "color",
+        command: this.color,
+    };
+    this.connection.send(JSON.stringify(payload));
+};
+
+
+function getRandomRgb() {
+    let num = Math.round(0xffffff * Math.random());
+    let r = num >> 16;
+    let g = num >> 8 & 255;
+    let b = num & 255;
+    return 'rgb(' + r + ', ' + g + ', ' + b + ')';
+}
+
 
 function add_player_gui(new_player) {
     let p_name = new_player.name;

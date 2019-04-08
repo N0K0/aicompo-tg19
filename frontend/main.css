@@ -22,8 +22,6 @@ header{
 canvas{
     position: absolute;
     border-style: solid;
-    border-width: 10px;
-    border-color: #FFFFFF;
     width: 90vw;
     height: 90vh;
     left: 5vw;

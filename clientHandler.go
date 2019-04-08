@@ -141,8 +141,10 @@ func (p *Player) parseCommand() {
 
 			case "username":
 				p.setUsername(&command)
-				break
+			case "color":
+				p.setColor(&command)
 			case "move":
+				//TODO: Implement move parser
 				break
 			default:
 				logger.Info("Player sent invalid command")

@@ -7,6 +7,9 @@ class Viewer{
         this.ctx.height = 800;
         this.ctx.width = 800;
 
+        this.mapsizeX = 0;
+        this.mapsizeY = 0;
+
     }
 }
 
@@ -48,11 +51,34 @@ Viewer.prototype.paint_canvas = function () {
 
 Viewer.prototype.render_scene = function (game_status) {
     this.paint_canvas(game_status);
+    console.log(game_status);
 
-    //console.log(game_status);
-    //console.log(game_status.GameStatus.Status);
+    this.mapsizeX = game_status.GameStatus.GameMap.SizeX -1;
+    this.mapsizeY = game_status.GameStatus.GameMap.SizeY -1;
 
     // Render snakes
+    let snakes = game_status.Players;
+    for (let snake in snakes){
+        let s = snakes[snake];
+        console.log(s);
+        let col_str = s.Color;
+
+        for(let b in s.PosX){
+            let x = s.PosX[b];
+            let y = s.PosY[b];
+            // TODO: Respect colors
+            this.paint_cell(x,y,col_str)
+        }
+    }
+
+    let foods = game_status.GameStatus.Foods;
+    for (let food in foods) {
+        let f = foods[food];
+        console.log(f);
+        let x = f.X;
+        let y = f.Y;
+        this.paint_cell(x,y,"green");
+    }
 
     // Render UI
     switch (game_status.GameStatus.Status) {
@@ -72,13 +98,15 @@ Viewer.prototype.render_scene = function (game_status) {
 };
 
 Viewer.prototype.paint_cell = function(x, y, color) {
-    let h = this.height;
-    let w = this.width;
+    //console.log("Painting cell", x, y, color);
+    let h = Math.floor(ctx.height / this.mapsizeY);
+    let w = Math.floor(ctx.width / this.mapsizeX);
 
-    this.ctx.fillStyle = color;
-    this.ctx.fillRect(x*w, y*h, w, h);
-    this.ctx.strokeStyle = "white";
-    this.ctx.strokeRect(x*w, y*h, w, h);
+    ctx.fillStyle = color;
+    ctx.fillRect(x*w, y*h, w, h);
+    //console.log("x:", x*w);
+    //console.log("y:", y*h);
+    //console.log("w:", w, "h:", h);
 };
 
 Viewer.prototype.ui_pregame = function (game_status) {

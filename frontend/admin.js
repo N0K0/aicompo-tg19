@@ -25,7 +25,6 @@ AdminConnection.prototype.adminConnect = function() {
         admin.adminDisconnect()
     };
     this.conn.onmessage = function(evt) {
-        console.log("A RESPONSE: " + evt.data);
         admin.parseAdminEvent(evt);
     };
     this.conn.onerror = function(evt) {
@@ -64,7 +63,7 @@ AdminConnection.prototype.parseAdminEvent = function(evt) {
 AdminConnection.prototype.startSystem = function () {
     console.log("Admin: Starting system");
 
-
+    showScreen(0);
     let payload = {
         type: "start",
         message: ""
