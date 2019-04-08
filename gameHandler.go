@@ -197,6 +197,11 @@ func (g *GameHandler) initGame() {
 	// TODO: Fill out what is missing
 	g.RoundNumber = 0
 
+	if g.config.mapSizeY != 0 && g.config.mapSizeX != 0 {
+		g.GameMap = baseGameMap(g.config.mapSizeX, g.config.mapSizeY)
+	}
+	size := baseGameMapSize(len(g.players))
+	g.GameMap = baseGameMap(size, size)
 }
 
 // This function sets all the values that should last for an entire round

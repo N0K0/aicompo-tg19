@@ -145,13 +145,18 @@ func (gm *GameMapStr) findEmptySpot(fair bool) (int, int, error) {
 	return listX[element], listY[element], nil
 }
 
-func baseGameMap() GameMapStr {
-	defaultSize := 80
-	blankMap := fmt.Sprintf("%v,%v\n", defaultSize, defaultSize)
-	for i := 1; i < defaultSize; i++ {
-		blankMap = blankMap + strings.Repeat("_", defaultSize) + "\n"
+func baseGameMap(sizeX int, sizeY int) GameMapStr {
+	logger.Infof("Generating map with size: %v,%v", sizeX, sizeY)
+
+	blankMap := fmt.Sprintf("%v,%v\n", sizeX, sizeY)
+	for i := 1; i < sizeY; i++ {
+		blankMap = blankMap + strings.Repeat("_", sizeX) + "\n"
 	}
 	return mapFromString(blankMap)
+}
+
+func baseGameMapSize(numberPlayers int) int {
+	return numberPlayers*7 + 10
 }
 
 /* mapFromString takes in an map in the form of x,y and then y lines with x length denoting the map.
@@ -202,8 +207,6 @@ func mapFromString(mapInput string) GameMapStr {
 	}
 
 	gm := GameMapStr{
-		SizeX:   0,
-		SizeY:   0,
 		Content: nil,
 	}
 
@@ -216,16 +219,14 @@ func mapFromString(mapInput string) GameMapStr {
 			switch char {
 			case blockClearChar:
 				contentLine[index] = blockClear
-				break
 			case blockWallChar:
 				contentLine[index] = blockWall
-				break
 			case blockSnakeChar:
 				contentLine[index] = blockSnake
-				break
+			case blockSnakeHead:
+				contentLine[index] = blockSnakeHead
 			case blockFoodChar:
 				contentLine[index] = blockFood
-				break
 			default:
 				log.Panicf("Found invalid char: '%c'", char)
 			}

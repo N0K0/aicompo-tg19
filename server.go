@@ -51,8 +51,6 @@ func wsConnector(manager *Managers, w http.ResponseWriter, r *http.Request) {
 		size:         0,
 	}
 
-	manager.am.pushPlayers()
-
 	logger.Infof("New socket from %v", ws.RemoteAddr())
 }
 
@@ -103,8 +101,8 @@ func wsViewConnector(manager *Managers, w http.ResponseWriter, r *http.Request) 
 		manager.vc = &gameViewer{
 			conn:         ws,
 			gm:           manager.gm,
-			qSend:        make(chan []byte, 1),
-			qRecv:        make(chan []byte, 1),
+			qSend:        make(chan []byte, 10),
+			qRecv:        make(chan []byte, 10),
 			statusTicker: nil,
 			pingTicker:   nil,
 		}
