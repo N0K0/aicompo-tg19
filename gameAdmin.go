@@ -23,7 +23,8 @@ type adminHandler struct {
 
 	ticker *time.Ticker
 
-	mutex sync.Mutex
+	mutex     sync.Mutex
+	closeChan chan bool
 }
 
 func (admin *adminHandler) run() {
@@ -64,12 +65,15 @@ func (admin *adminHandler) adminParseCommand(jsonObj []byte) {
 		admin.adminParseConfigUpdates(&c.Message)
 	case "config_get":
 		admin.adminPushConfig()
+	case "init":
+		admin.gm.initGame()
 	case "start":
 		admin.gm.startGame()
 		break
 	case "pause":
-		break
+		admin.gm.pauseGame()
 	case "restart":
+		admin.gm.restartGame()
 		break
 	case "kick":
 		err := admin.kickPlayer(string(c.Message))
@@ -286,6 +290,9 @@ func (admin *adminHandler) writeSocket() {
 	}()
 	for {
 		select {
+		case <-admin.closeChan:
+			return
+
 		case message, ok := <-admin.qSend:
 			if admin.conn == nil {
 				return
@@ -304,8 +311,9 @@ func (admin *adminHandler) writeSocket() {
 				}
 				return
 			}
-
+			admin.mutex.Lock()
 			w, err := admin.conn.NextWriter(websocket.TextMessage)
+			admin.mutex.Unlock()
 			if err != nil {
 				logger.Info("Error with NextWriter")
 				return
@@ -366,6 +374,7 @@ func (admin *adminHandler) readSocket() {
 				logger.Infof("Admin closed socket at %v . Removing connection", admin.conn.RemoteAddr())
 				admin.conn = nil
 				admin.ticker.Stop()
+				admin.closeChan <- true
 			}
 			break
 		}

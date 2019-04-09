@@ -67,11 +67,12 @@ func wsAdminConnector(manager *Managers, w http.ResponseWriter, r *http.Request)
 	if manager.am == nil {
 		logger.Info("Creating new adminmanager")
 		manager.am = &adminHandler{
-			gm:    manager.gm,
-			man:   manager,
-			conn:  ws,
-			qRecv: make(chan []byte, 10),
-			qSend: make(chan []byte, 10),
+			gm:        manager.gm,
+			man:       manager,
+			conn:      ws,
+			closeChan: make(chan bool, 1),
+			qRecv:     make(chan []byte, 10),
+			qSend:     make(chan []byte, 10),
 		}
 		go manager.am.run()
 
