@@ -40,8 +40,8 @@ Viewer.prototype.viewConnect = function() {
 
 
 Viewer.prototype.paint_canvas = function () {
-    let w = this.width;
-    let h = this.height;
+    let w = ctx.width;
+    let h = ctx.height;
 
     this.ctx.fillStyle = "black";
     this.ctx.fillRect(0, 0, w, h);
@@ -50,7 +50,7 @@ Viewer.prototype.paint_canvas = function () {
 };
 
 Viewer.prototype.render_scene = function (game_status) {
-    this.paint_canvas(game_status);
+    this.paint_canvas();
     console.log(game_status);
 
     this.mapsizeX = game_status.GameStatus.GameMap.SizeX -1;
@@ -70,14 +70,25 @@ Viewer.prototype.render_scene = function (game_status) {
             this.paint_cell(x,y,col_str)
         }
     }
-
-    let foods = game_status.GameStatus.Foods;
+    // Render food
+    let foods = game_status.GameStatus.GameMap.Foods;
     for (let food in foods) {
         let f = foods[food];
         console.log(f);
         let x = f.X;
         let y = f.Y;
         this.paint_cell(x,y,"green");
+    }
+
+    // Render walls
+
+    let walls = game_status.GameStatus.GameMap.Walls;
+    for (let wall in walls){
+        let w = walls[wall];
+        let x = w.X;
+        let y = w.Y;
+
+        this.paint_cell(x,y,"white");
     }
 
     // Render UI
@@ -99,14 +110,11 @@ Viewer.prototype.render_scene = function (game_status) {
 
 Viewer.prototype.paint_cell = function(x, y, color) {
     //console.log("Painting cell", x, y, color);
-    let h = Math.floor(ctx.height / this.mapsizeY);
-    let w = Math.floor(ctx.width / this.mapsizeX);
+    let h = Math.floor(ctx.height / (this.mapsizeY +1));
+    let w = Math.floor(ctx.width / (this.mapsizeX+1));
 
     ctx.fillStyle = color;
     ctx.fillRect(x*w, y*h, w, h);
-    //console.log("x:", x*w);
-    //console.log("y:", y*h);
-    //console.log("w:", w, "h:", h);
 };
 
 Viewer.prototype.ui_pregame = function (game_status) {

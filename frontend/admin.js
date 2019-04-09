@@ -60,6 +60,17 @@ AdminConnection.prototype.parseAdminEvent = function(evt) {
     }
 };
 
+AdminConnection.prototype.initSystem = function() {
+    console.log("Admin: init system");
+
+    let payload = {
+        type: "init",
+        message: ""
+    };
+
+    this.conn.send(JSON.stringify(payload))
+};
+
 AdminConnection.prototype.startSystem = function () {
     console.log("Admin: Starting system");
 

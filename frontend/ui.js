@@ -3,6 +3,7 @@ let canvas = document.getElementById("snake");
 let ctx = canvas.getContext("2d");
 
 // Screens
+let screen_snake_ui = document.getElementById("gamescreen");
 let screen_snake = document.getElementById("snake");
 let screen_menu = document.getElementById("menu");
 let screen_gameover = document.getElementById("gameover");
@@ -111,6 +112,7 @@ for(let i = 0; i < max_time_setting.length; i++){
 
 function newGame() {
     showScreen(4);
+    admin_ws.initSystem();
 }
 
 
@@ -123,6 +125,7 @@ function showScreen(screen_opt){
     switch(screen_opt){
 
         case 0:
+            screen_snake_ui.style.display = "block";
             screen_snake.style.display = "block";
             screen_menu.style.display = "none";
             screen_setting.style.display = "none";
@@ -131,6 +134,7 @@ function showScreen(screen_opt){
             break;
 
         case 1:
+            screen_snake_ui.style.display = "none";
             screen_snake.style.display = "none";
             screen_menu.style.display = "block";
             screen_setting.style.display = "none";
@@ -140,6 +144,7 @@ function showScreen(screen_opt){
 
         case 2:
             fetch_settings();
+            screen_snake_ui.style.display = "none";
             screen_snake.style.display = "none";
             screen_menu.style.display = "none";
             screen_setting.style.display = "block";
@@ -148,6 +153,7 @@ function showScreen(screen_opt){
             break;
 
         case 3:
+            screen_snake_ui.style.display = "none";
             screen_snake.style.display = "none";
             screen_menu.style.display = "none";
             screen_setting.style.display = "none";
@@ -156,6 +162,7 @@ function showScreen(screen_opt){
             break;
 
         case 4:
+            screen_snake_ui.style.display = "none";
             screen_snake.style.display = "none";
             screen_menu.style.display = "none";
             screen_setting.style.display = "none";
@@ -299,10 +306,8 @@ function check_setting(elements, value) {
     for (let i = 0; i < elements.length; ++i) {
         if (elements[i].value === value) {
             elements[i].checked = true;
-
         } else {
             elements[i].checked = false;
-
         }
     }
 
