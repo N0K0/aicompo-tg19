@@ -199,6 +199,16 @@ func (g *GameHandler) startGame() {
 	g.Status = running
 }
 
+// This function will at some point pause the game
+func (g *GameHandler) pauseGame() {
+
+}
+
+// This function will practically restart the current set of rounds
+func (g *GameHandler) restartGame() {
+
+}
+
 // Things we need:
 //	Players
 //	Scores

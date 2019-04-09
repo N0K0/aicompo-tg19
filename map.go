@@ -30,17 +30,22 @@ const (
 )
 
 /*
-GameMapStr is a small struct for maps passed as a "2d string"
+GameMap is a small struct for maps passed as a "2d string"
 */
-type GameMapStr struct {
+type GameMap struct {
+
+	// The "simple map"
 	SizeX   int
 	SizeY   int
 	Content [][]block
-	HeadsX  []int
-	HeadsY  []int
+
+	// Some lists if you would rather use them for the parsing
+	Heads []Head
+	Walls []Wall // This contains also the rest of the snake blocks
+	Foods []Food
 }
 
-func (gm *GameMapStr) getTile(x int, y int) (block, error) {
+func (gm *GameMap) getTile(x int, y int) (block, error) {
 	if x < 0 || x >= gm.SizeX {
 		return blockClear, errors.New("X out of bounds")
 	}
@@ -52,7 +57,21 @@ func (gm *GameMapStr) getTile(x int, y int) (block, error) {
 	return gm.Content[y][x], nil
 }
 
-func (gm *GameMapStr) setTile(x int, y int, value block) error {
+func (gm *GameMap) setTileLine(startX int, startY int, deltaX int, deltaY int, value block, iterations int) {
+	x := startX
+	y := startY
+	for iter := 0; iter < iterations; iter++ {
+		err := gm.setTile(x, y, value)
+		if err != nil {
+			logger.Info("Hit outside bound, stopping line")
+			return
+		}
+		x += deltaX
+		y += deltaY
+	}
+}
+
+func (gm *GameMap) setTile(x int, y int, value block) error {
 	if x < 0 || x >= gm.SizeX {
 		return errors.New("X out of bounds")
 	}
@@ -61,12 +80,32 @@ func (gm *GameMapStr) setTile(x int, y int, value block) error {
 		return errors.New("Y out of bounds")
 	}
 
+	switch value {
+	case blockWall:
+		fallthrough
+	case blockSnake:
+		gm.Walls = append(gm.Walls, Wall{x, y})
+	case blockSnakeHead:
+		gm.Heads = append(gm.Heads, Head{x, y})
+	case blockFood:
+		gm.Foods = append(gm.Foods, Food{x, y})
+	}
+
 	gm.Content[y][x] = value
 	return nil
 }
 
+func (b block) MarshalText() (text []byte, err error) {
+	val, err := b.toRune()
+
+	if err != nil {
+		return []byte(""), err
+	}
+	return []byte(strconv.QuoteRuneToASCII(val)), nil
+}
+
 // Returns an rune from an block. return space and an error if not possible
-func (b *block) toChar() (rune, error) {
+func (b *block) toRune() (rune, error) {
 	switch *b {
 	case blockClear:
 		return blockClearChar, nil
@@ -79,7 +118,7 @@ func (b *block) toChar() (rune, error) {
 	case blockFood:
 		return blockFoodChar, nil
 	}
-	return ' ', errors.New("unable to convert block to rune")
+	return rune(-1), errors.New("unable to convert block to rune")
 }
 
 // Creates a block from a rune. return an error and -1 if not possible
@@ -99,7 +138,7 @@ func toBlock(r rune) (block, error) {
 	return -1, errors.New("unable to convert rune to block")
 }
 
-func (gm *GameMapStr) getAllEmpty() ([]int, []int, error) {
+func (gm *GameMap) getAllEmpty() ([]int, []int, error) {
 	listX := make([]int, 0)
 	listY := make([]int, 0)
 
@@ -126,7 +165,7 @@ func (gm *GameMapStr) getAllEmpty() ([]int, []int, error) {
 // The fair bool value exists for trying to place the objects some part away from the snakes head
 // Note that fair does not do anything yet!
 // Returns the x,y coordinates for a empty spot
-func (gm *GameMapStr) findEmptySpot(fair bool) (int, int, error) {
+func (gm *GameMap) findEmptySpot(fair bool) (int, int, error) {
 	if fair {
 		logger.Warning("the param fair is not implemented yet!")
 	}
@@ -145,18 +184,37 @@ func (gm *GameMapStr) findEmptySpot(fair bool) (int, int, error) {
 	return listX[element], listY[element], nil
 }
 
-func baseGameMap(sizeX int, sizeY int) GameMapStr {
+func baseGameMap(sizeX int, sizeY int, walls int) GameMap {
 	logger.Infof("Generating map with size: %v,%v", sizeX, sizeY)
 
 	blankMap := fmt.Sprintf("%v,%v\n", sizeX, sizeY)
 	for i := 1; i < sizeY; i++ {
 		blankMap = blankMap + strings.Repeat("_", sizeX) + "\n"
 	}
-	return mapFromString(blankMap)
+
+	gm := mapFromString(blankMap)
+
+	if walls == 0 {
+		return gm
+	}
+
+	// Top
+	gm.setTileLine(0, 0, 1, 0, blockWall, sizeX)
+
+	// Bottom
+	gm.setTileLine(0, sizeY-1, 1, 0, blockWall, sizeX)
+
+	// Left
+	gm.setTileLine(0, 0, 0, 1, blockWall, sizeY)
+
+	// Right
+	gm.setTileLine(sizeX-1, 0, 0, 1, blockWall, sizeY)
+
+	return gm
 }
 
 func baseGameMapSize(numberPlayers int) int {
-	return numberPlayers*7 + 10
+	return numberPlayers*2 + 10
 }
 
 /* mapFromString takes in an map in the form of x,y and then y lines with x length denoting the map.
@@ -182,7 +240,7 @@ XX____
 ---End---
 
 */
-func mapFromString(mapInput string) GameMapStr {
+func mapFromString(mapInput string) GameMap {
 	logger.Info("Parsing map")
 	defer logger.Info("Map parsed")
 	lines := strings.Split(mapInput, "\n")
@@ -206,7 +264,7 @@ func mapFromString(mapInput string) GameMapStr {
 		log.Fatal("Mismatch between size of X and the size of the first line of the map")
 	}
 
-	gm := GameMapStr{
+	gm := GameMap{
 		Content: nil,
 	}
 
@@ -240,6 +298,6 @@ func mapFromString(mapInput string) GameMapStr {
 	return gm
 }
 
-func (m *GameMapStr) spreadFood(targetAmount int) {
+func (m *GameMap) spreadFood(targetAmount int) {
 
 }
