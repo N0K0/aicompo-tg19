@@ -84,7 +84,7 @@ func wsAdminConnector(manager *Managers, w http.ResponseWriter, r *http.Request)
 		go manager.am.readSocket()
 		go manager.am.writeSocket()
 	} else {
-		logger.Info("Something wierd with admin socket")
+		logger.Info("Something weird with admin socket")
 	}
 }
 
