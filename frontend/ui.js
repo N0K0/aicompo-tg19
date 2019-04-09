@@ -54,7 +54,7 @@ let wall;
 
 // --------------------
 
-setMapSize("0x0");
+setMapSize("40x40");
 setMinTime("200");
 setMaxTime("800");
 setWall("1");
@@ -125,7 +125,7 @@ function showScreen(screen_opt){
     switch(screen_opt){
 
         case 0:
-            screen_snake_ui.style.display = "block";
+            screen_snake_ui.style.display = "grid";
             screen_snake.style.display = "block";
             screen_menu.style.display = "none";
             screen_setting.style.display = "none";

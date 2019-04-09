@@ -36,7 +36,6 @@ func (admin *adminHandler) run() {
 
 	loggerTicker := time.NewTicker(500 * time.Millisecond)
 	for {
-		time.Sleep(1 * time.Millisecond)
 		select {
 		case incoming := <-admin.qRecv:
 			logger.Infof("New admin message: %s", incoming)
@@ -69,12 +68,10 @@ func (admin *adminHandler) adminParseCommand(jsonObj []byte) {
 		admin.gm.initGame()
 	case "start":
 		admin.gm.startGame()
-		break
 	case "pause":
 		admin.gm.pauseGame()
 	case "restart":
 		admin.gm.restartGame()
-		break
 	case "kick":
 		err := admin.kickPlayer(string(c.Message))
 		if err != nil {
@@ -84,7 +81,6 @@ func (admin *adminHandler) adminParseCommand(jsonObj []byte) {
 		}
 	default:
 		logger.Errorf("Unable to parse message. Got %v", c.Type)
-		break
 	}
 
 }

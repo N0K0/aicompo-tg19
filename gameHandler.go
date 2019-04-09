@@ -306,7 +306,7 @@ func NewConfigHolder() *GameConfigHolder {
 	return &GameConfigHolder{
 		MinTurnUpdate: 400,
 		MaxTurnUpdate: 800,
-		MapSize:       "0x0",
+		MapSize:       "40x40",
 		OuterWalls:    1,
 
 		turnTimeMax: 7500 * time.Millisecond,
