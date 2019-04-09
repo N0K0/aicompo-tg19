@@ -34,6 +34,15 @@ type StatusObject struct {
 	GameStatus GameHandler
 }
 
+type coord struct {
+	X int
+	Y int
+}
+
+type Food coord
+type Wall coord
+type Head coord
+
 type GameConfigHolder struct {
 	MinTurnUpdate int    `json:"minTurnUpdate"`
 	MaxTurnUpdate int    `json:"maxTurnUpdate"`

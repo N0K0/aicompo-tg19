@@ -12,10 +12,6 @@ import (
 )
 
 type gamestate int
-type Food struct {
-	X int
-	Y int
-}
 
 const (
 	pregame   gamestate = iota
@@ -47,7 +43,6 @@ func (gs gamestate) MarshalText() (text []byte, err error) {
 type GameHandler struct {
 	// Meta info
 	players map[*Player]bool
-	Foods   []Food
 	Status  gamestate
 	config  *GameConfigHolder
 
@@ -66,7 +61,8 @@ type GameHandler struct {
 	// Game info
 	GameNumber  int
 	RoundNumber int
-	GameMap     GameMapStr
+	GameMap     GameMap
+	baseMap     GameMap // A copy for safe keeping
 	CurrentTick int
 
 	mapLock     sync.Mutex
@@ -210,15 +206,19 @@ func (g *GameHandler) startGame() {
 //	Round
 
 // This function sets all the values that should last for an entire game
+// Should we kick all players?
 func (g *GameHandler) initGame() {
-	// TODO: Fill out what is missing
 	g.RoundNumber = 0
+	g.Status = pregame
 
 	if g.config.mapSizeY != 0 && g.config.mapSizeX != 0 {
-		g.GameMap = baseGameMap(g.config.mapSizeX, g.config.mapSizeY)
+		g.GameMap = baseGameMap(g.config.mapSizeX, g.config.mapSizeY, g.config.OuterWalls)
+		g.baseMap = g.GameMap
+		return
 	}
 	size := baseGameMapSize(len(g.players))
-	g.GameMap = baseGameMap(size, size)
+	g.GameMap = baseGameMap(size, size, g.config.OuterWalls)
+	g.baseMap = g.GameMap
 }
 
 // This function sets all the values that should last for an entire round
@@ -263,10 +263,9 @@ func (g *GameHandler) initRound() {
 		if err != nil {
 			panic("Could not init round, not enough space to start new round")
 		}
-		g.Foods = append(g.Foods, Food{x, y})
 	}
 
-	logger.Infof("Foods: %v", g.Foods)
+	logger.Infof("Foods: %v", g.GameMap.Foods)
 
 }
 
@@ -305,7 +304,7 @@ func NewConfigHolder() *GameConfigHolder {
 
 		GameRounds:     5,
 		RoundTicks:     10000,
-		targetFood:     20,   // The number of food we are trying to have on the map at once
+		targetFood:     2,    // The number of food we are trying to have on the map at once
 		contWithWinner: true, // Should end game when winners is clear (for example 3/5 wins already)
 
 	}
