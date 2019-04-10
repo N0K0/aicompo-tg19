@@ -42,7 +42,6 @@ func (admin *adminHandler) run() {
 			admin.adminParseCommand(incoming)
 			break
 		case <-loggerTicker.C:
-			admin.logStatus()
 			admin.pushPlayers()
 			break
 		}
@@ -197,14 +196,6 @@ func (admin *adminHandler) adminPushConfig() {
 
 	logger.Info(string(jsonString))
 	admin.qSend <- jsonString
-}
-
-func (admin *adminHandler) logStatus() {
-	statusString := `Admin status:
-		Connected Players: %v
-	`
-	numPlayers := len(admin.gm.players)
-	logger.Infof(statusString, numPlayers)
 }
 
 func (admin *adminHandler) pushPlayers() {

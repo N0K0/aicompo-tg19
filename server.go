@@ -41,14 +41,14 @@ func wsConnector(manager *Managers, w http.ResponseWriter, r *http.Request) {
 		conn:         ws,
 		Username:     "No Username",
 		status:       NoUsername,
-		Command:      "",
+		command:      "",
 		qSend:        make(chan []byte, 10),
 		qRecv:        make(chan []byte, 10),
 		gmUnregister: manager.gm.unregister,
-		turnsLost:    0,
+		ticksLost:    0,
 		PosX:         make([]int, 0),
 		PosY:         make([]int, 0),
-		size:         0,
+		Size:         0,
 	}
 
 	logger.Infof("New socket from %v", ws.RemoteAddr())

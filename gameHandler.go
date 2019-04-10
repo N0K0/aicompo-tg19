@@ -53,10 +53,12 @@ type GameHandler struct {
 	// Channels
 	timerDeadline *time.Timer
 	timerMinline  *time.Timer
+	timeStamp     time.Time
 	register      chan *Player
 	unregister    chan *Player
 
 	adminChan chan string
+	turnDone  chan bool
 
 	// Game info
 	GameNumber  int
@@ -77,6 +79,7 @@ func newGameHandler() *GameHandler {
 		register:    make(chan *Player, 5),
 		unregister:  make(chan *Player, 5),
 		adminChan:   make(chan string, 5),
+		turnDone:    make(chan bool, 2),
 		GameNumber:  0,
 		RoundNumber: 0,
 		config:      NewConfigHolder(),
@@ -119,14 +122,14 @@ func (g *GameHandler) run() {
 	}
 }
 
+// Runs as a go func
 func (g *GameHandler) gameState() {
 	for {
-		time.Sleep(1 * time.Millisecond)
 		switch g.Status {
 		case pregame:
-			break
+			g.pregame()
 		case running:
-			break
+			g.running()
 		}
 	}
 }
@@ -136,19 +139,46 @@ func (g *GameHandler) pregame() {
 }
 
 func (g *GameHandler) running() {
+	logger.Info("Starting the running subsystem")
+	g.timerMinline = time.NewTimer(g.config.turnTimeMin)
+	g.timerDeadline = time.NewTimer(g.config.turnTimeMax)
+	g.timeStamp = time.Now()
+
 	for {
 		select {
 		case <-g.timerMinline.C:
+			logger.Info("Min deadline hit")
 			// Check if all is done and exec if true
-			break
+			if g.checkPlayersDone() {
+				g.turnDone <- true
+			}
 		case <-g.timerDeadline.C:
+			logger.Info("Max deadline hit")
 			// Exec regardless if all is done
-			break
+			g.turnDone <- false
+		case all := <-g.turnDone:
+			logger.Infof("Turn is done. All: %v", all)
+			g.execTurn()
+			g.newTurn()
 		default:
-			logger.Info("GameHandler")
-			time.Sleep(1 * time.Second)
+			timeMark := time.Now().After(g.timeStamp.Add(g.config.turnTimeMin))
+			// If all is done and we are after the timestamp
+			if g.checkPlayersDone() && timeMark {
+				g.turnDone <- true
+			}
 		}
 	}
+}
+
+func (g *GameHandler) checkPlayersDone() bool {
+	for p := range g.players {
+		if p.status != CommandSent {
+			return false
+		}
+	}
+	logger.Info("Players done")
+
+	return true
 }
 
 func (g *GameHandler) roundDone() {
@@ -162,16 +192,54 @@ func (g *GameHandler) gameDone() {
 // newTurn reset states for the clients and readies everything for a new round
 // It also resets the timers we need
 func (g *GameHandler) newTurn() {
+	logger.Info("Init new turn")
+
+	g.pushToPlayers()
+
+	for p := range g.players {
+		if p.status == CommandWait {
+			p.ticksLost += 1
+		}
+		p.status = CommandWait
+	}
+
 	// Sets the new timers
+	g.timerDeadline.Stop()
+	g.timerMinline.Stop()
 	g.timerDeadline.Reset(g.config.turnTimeMax)
 	g.timerMinline.Reset(g.config.turnTimeMin)
 }
 
-// execTurn resets
+// Run trough all the clients in an order
+// All moves happens on the same time, so two snakes can kill each other with their head
 func (g *GameHandler) execTurn() {
-	// Run trough all the clients in an order (which?)
+	logger.Info("Exec turn is running")
+
+	g.CurrentTick += 1
+
 	g.mapLock.Lock()
+	// TODO: Update map targets
+
+	// TODO: Check for collisions
 	g.mapLock.Unlock()
+
+	if g.isRoundDone() {
+		//TODO: What to do when round is done
+	}
+}
+
+func (g *GameHandler) pushToPlayers() {
+	//TODO: Push data to players
+
+	for p := range g.players {
+		go p.pushGameState(g)
+	}
+
+}
+
+// Checks if ticks has been reached or there is less than two players left
+func (g *GameHandler) isRoundDone() bool {
+	return false
 }
 
 func (g *GameHandler) startGame() {
@@ -237,7 +305,7 @@ func (g *GameHandler) initRound() {
 	logger.Info("Initializing new round")
 	// Reset ticks
 	g.CurrentTick = 0
-
+	g.GameMap = g.baseMap
 	// TODO: Make this work properly, make it so that we can pass a proper map, not just reinint this one
 
 	// Set pos of players
@@ -252,8 +320,8 @@ func (g *GameHandler) initRound() {
 
 		player.PosX = []int{x, x, x}
 		player.PosY = []int{y, y, y}
-		player.size = 3
-		player.roundScore = 0
+		player.Size = 3
+		player.RoundScore = 0
 
 	}
 
@@ -309,11 +377,11 @@ func NewConfigHolder() *GameConfigHolder {
 		MapSize:       "40x40",
 		OuterWalls:    1,
 
-		turnTimeMax: 7500 * time.Millisecond,
-		turnTimeMin: 2000 * time.Millisecond,
+		turnTimeMin: 400 * time.Millisecond,
+		turnTimeMax: 800 * time.Millisecond,
 
 		GameRounds:     5,
-		RoundTicks:     10000,
+		RoundTicks:     1000,
 		targetFood:     2,    // The number of food we are trying to have on the map at once
 		contWithWinner: true, // Should end game when winners is clear (for example 3/5 wins already)
 
@@ -337,13 +405,13 @@ type Player struct {
 	status Status
 
 	// Last command read
-	Command string `json:"command"`
+	command string
 
 	// Channels for caching data
 	qSend chan []byte
 	qRecv chan []byte
 	// Logic data
-	turnsLost    int
+	ticksLost    int
 	gmUnregister chan *Player
 
 	// GameData
@@ -352,7 +420,7 @@ type Player struct {
 	PosY       []int
 	HeadX      int
 	HeadY      int
-	size       int
-	totalScore int
-	roundScore int
+	Size       int
+	TotalScore int
+	RoundScore int
 }

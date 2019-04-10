@@ -51,7 +51,7 @@ Viewer.prototype.paint_canvas = function () {
 
 Viewer.prototype.render_scene = function (game_status) {
     this.paint_canvas();
-    console.log(game_status);
+    //console.log(game_status);
 
     this.mapsizeX = game_status.GameStatus.GameMap.SizeX - 1;
     this.mapsizeY = game_status.GameStatus.GameMap.SizeY - 1;
@@ -60,7 +60,7 @@ Viewer.prototype.render_scene = function (game_status) {
     let snakes = game_status.Players;
     for (let snake in snakes) {
         let s = snakes[snake];
-        console.log(s);
+        //console.log(s);
         let col_str = s.Color;
 
         for (let b in s.PosX) {
@@ -74,7 +74,7 @@ Viewer.prototype.render_scene = function (game_status) {
     let foods = game_status.GameStatus.GameMap.Foods;
     for (let food in foods) {
         let f = foods[food];
-        console.log(f);
+        //console.log(f);
         let x = f.X;
         let y = f.Y;
         this.paint_cell(x, y, "green");
@@ -111,7 +111,7 @@ Viewer.prototype.render_scene = function (game_status) {
     for (let player in players) {
         let p = players[player][1];
         let tmp_div = document.createElement("div");
-        console.log(p);
+        //console.log(p);
         tmp_div.innerText = p.username + ": " + p.RoundScore + "  (" + p.TotalScore+ ")";
 
         div_score_clone.appendChild(tmp_div)

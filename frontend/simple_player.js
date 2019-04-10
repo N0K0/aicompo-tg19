@@ -41,8 +41,7 @@ Player.prototype.playerConnect = function() {
         player.connection = null;
     };
     this.connection.onmessage = function(evt) {
-        console.log(evt.data);
-        console.log(evt);
+        parseEvent(evt.data)
     };
     this.connection.onerror = function(evt) {
         console.log("ERROR: " + evt.data);
@@ -74,6 +73,10 @@ Player.prototype.updateColor = function() {
     this.connection.send(JSON.stringify(payload));
 };
 
+function parseEvent(evt_data) {
+    let data = JSON.parse(evt_data)
+    console.log(data)
+}
 
 function getRandomRgb() {
     let num = Math.round(0xffffff * Math.random());

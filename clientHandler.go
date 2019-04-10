@@ -25,9 +25,10 @@ type Status int
 
 // Status enumeration types
 const (
-	NoUsername  Status = iota
-	ReadyToPlay Status = iota
-	Waiting     Status = iota
+	NoUsername Status = iota
+	ReadyToPlay
+	CommandWait
+	CommandSent
 )
 
 func (p *Player) writePump() {
@@ -126,6 +127,11 @@ func (p *Player) readPump() {
 	}
 }
 
+// This function pushes the gamestatus object to the players
+func (p *Player) pushGameState(g *GameHandler) {
+	p.qSend <- g.generateStatusJson()
+}
+
 func (p *Player) parseCommand() {
 	for {
 		select {
@@ -151,14 +157,26 @@ func (p *Player) parseCommand() {
 			case "color":
 				p.setColor(&command)
 			case "move":
-				//TODO: Implement move parser
-				break
+				p.parseMoveCommand(&command)
 			default:
 				logger.Info("Player sent invalid command")
 				p.sendError("Invalid command type!")
 				break
 			}
 		}
+	}
+}
+func (p *Player) parseMoveCommand(c *Command) {
+	logger.Infof("Move %v: %v", p.Username, c.Value)
+	switch c.Value {
+	case "left":
+		p.command = "left"
+	case "right":
+		p.command = "right"
+	case "up":
+		p.command = "up"
+	case "down":
+		p.command = "down"
 	}
 }
 
