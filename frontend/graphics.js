@@ -53,21 +53,21 @@ Viewer.prototype.render_scene = function (game_status) {
     this.paint_canvas();
     console.log(game_status);
 
-    this.mapsizeX = game_status.GameStatus.GameMap.SizeX -1;
-    this.mapsizeY = game_status.GameStatus.GameMap.SizeY -1;
+    this.mapsizeX = game_status.GameStatus.GameMap.SizeX - 1;
+    this.mapsizeY = game_status.GameStatus.GameMap.SizeY - 1;
 
     // Render snakes
     let snakes = game_status.Players;
-    for (let snake in snakes){
+    for (let snake in snakes) {
         let s = snakes[snake];
         console.log(s);
         let col_str = s.Color;
 
-        for(let b in s.PosX){
+        for (let b in s.PosX) {
             let x = s.PosX[b];
             let y = s.PosY[b];
             // TODO: Respect colors
-            this.paint_cell(x,y,col_str)
+            this.paint_cell(x, y, col_str)
         }
     }
     // Render food
@@ -77,36 +77,53 @@ Viewer.prototype.render_scene = function (game_status) {
         console.log(f);
         let x = f.X;
         let y = f.Y;
-        this.paint_cell(x,y,"green");
+        this.paint_cell(x, y, "green");
     }
 
     // Render walls
-
     let walls = game_status.GameStatus.GameMap.Walls;
-    for (let wall in walls){
+    for (let wall in walls) {
         let w = walls[wall];
         let x = w.X;
         let y = w.Y;
 
-        this.paint_cell(x,y,"white");
+        this.paint_cell(x, y, "white");
     }
 
     // Render UI
-    switch (game_status.GameStatus.Status) {
-        case "pregame":
-            this.ui_pregame();
-            break;
-        case "running":
-            this.ui_running();
-            break;
-        case "done":
-            this.ui_done();
-            break;
-        default:
-            break;
+
+    let div_tick = document.getElementById("ticks");
+    let div_scoreboard = document.getElementById("scoreboard");
+    let div_round = document.getElementById("round");
+
+    div_tick.innerText = "Tick: " + game_status.GameStatus.CurrentTick;
+    div_round.innerText = "Round: " + game_status.GameStatus.RoundNumber;
+
+    let div_score_clone = div_scoreboard.cloneNode(false);
+
+    let div_score_clone_text = document.createElement("div");
+    div_score_clone.innerText = "Score:";
+
+    div_score_clone.appendChild(div_score_clone_text);
+
+    let players = Object.entries(game_status.Players);
+    players = players.sort(compareScore);
+    for (let player in players) {
+        let p = players[player][1];
+        let tmp_div = document.createElement("div");
+        console.log(p);
+        tmp_div.innerText = p.username + ": " + p.RoundScore + "  (" + p.TotalScore+ ")";
+
+        div_score_clone.appendChild(tmp_div)
     }
 
+    div_scoreboard.replaceWith(div_score_clone)
 };
+
+// a and b are object elements of your array
+function compareScore(a,b) {
+    return a.RoundScore - b.RoundScore;
+}
 
 Viewer.prototype.paint_cell = function(x, y, color) {
     //console.log("Painting cell", x, y, color);
@@ -117,17 +134,7 @@ Viewer.prototype.paint_cell = function(x, y, color) {
     ctx.fillRect(x*w, y*h, w, h);
 };
 
-Viewer.prototype.ui_pregame = function (game_status) {
 
-};
-
-Viewer.prototype.ui_running = function (game_status) {
-
-};
-
-Viewer.prototype.ui_done = function (game_status) {
-
-};
 
 function render(){
     requestAnimationFrame(render);

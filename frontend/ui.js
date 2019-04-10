@@ -58,8 +58,7 @@ setMapSize("40x40");
 setMinTime("200");
 setMaxTime("800");
 setWall("1");
-
-showScreen(4);
+showScreen(1);
 
 // --------------------
 // Settings
