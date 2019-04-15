@@ -154,7 +154,7 @@ function showScreen(screen_opt){
             screen_snake.style.display = "none";
             screen_menu.style.display = "none";
             screen_setting.style.display = "none";
-            screen_gameover.style.display = "block";
+            screen_gameover.style.display = "grid";
             screen_lobby.style.display = "none";
             break;
 
@@ -264,6 +264,8 @@ function update_player_ui(players_json){
 
     let label_num_player = document.createElement("label");
     label_num_player.id = "num_players";
+
+
     label_num_player.innerText = "Players: " + Object.keys(players_json).length.toString();
 
     cloned_player_div.appendChild(label_num_player);

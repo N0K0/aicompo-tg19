@@ -161,7 +161,6 @@ h1{
     margin-left: auto;
     margin-right: auto;
     padding: 10px;
-
 }
 
 #round {
@@ -206,6 +205,8 @@ h1{
 
 #gameover{
     display: none;
+    grid-template-rows: 1fr 1fr 1fr;
+    height: 80vh;
     width: 500px;
     padding-top: 95px;
     padding-bottom: 95px;
@@ -216,7 +217,13 @@ h1{
     color: #FFF;
 }
 
-
+#gameover_buttons {
+    display: block;
+    margin-top: auto;
+    margin-left: auto;
+    margin-right: auto;
+    padding: 10px;
+}
 
 #menu h2{
     -webkit-animation: logo-ani 1000ms linear infinite;

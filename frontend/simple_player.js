@@ -108,35 +108,18 @@ Player.prototype.moveToFood = function(){
     let x_offset = closest.X - head.X;
     let y_offset = closest.Y - head.Y;
 
-    if (x_offset > y_offset){
-        if(y_offset > 0) {
-            this.move("up")
-        } else if(y_offset < 0) {
-            this.move("down")
-        }else if(x_offset > 0) {
-            this.move("right")
-        } else if(x_offset < 0) {
-            this.move("left")
-        } else {
-            console.log("No moves left");
-            this.move("left")
-        }
-    }else {
-        if(x_offset > 0) {
-            this.move("right")
-        } else if(x_offset < 0) {
-            this.move("left")
-        } else if(y_offset > 0) {
-            this.move("up")
-        } else if(y_offset < 0) {
-            this.move("down")
-        } else {
-            console.log("No moves left");
-            this.move("left")
-        }
+    if(y_offset > 0) {
+        this.move("up")
+    } else if(y_offset < 0) {
+        this.move("down")
+    }else if(x_offset > 0) {
+        this.move("right")
+    } else if(x_offset < 0) {
+        this.move("left")
+    } else {
+        console.log("No moves left");
+        this.move("left")
     }
-
-
 };
 
 Player.prototype.findClosestTile = function(type) {

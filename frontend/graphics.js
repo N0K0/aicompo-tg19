@@ -49,6 +49,24 @@ Viewer.prototype.paint_canvas = function () {
     this.ctx.strokeRect(0, 0, w, h);
 };
 
+Viewer.prototype.render_gameover = function (game_status) {
+    let game_done_score_div = document.getElementById("game_done_overview");
+    let tmp_score_div = game_done_score_div.cloneNode();
+
+
+    let players = Object.entries(game_status["Players"]);
+    console.log(players);
+    for (let player in players.sort(compare_gamedone)) {
+        let p = players[player][1];
+        let tmp_div = document.createElement("div");
+        //console.log(p);
+        tmp_div.innerText = p.username + ":   " + p["TotalScore"];
+        tmp_score_div.appendChild(tmp_div);
+    }
+    game_done_score_div.replaceWith(tmp_score_div);
+
+};
+
 Viewer.prototype.render_scene = function (game_status) {
     this.paint_canvas();
     console.log(game_status);
@@ -61,7 +79,8 @@ Viewer.prototype.render_scene = function (game_status) {
     console.log(this.round_total);
 
     if(this.current_round > this.round_total) {
-        showScreen(5);
+        this.render_gameover(game_status);
+        showScreen(3);
         return
     }
 
@@ -139,6 +158,16 @@ Viewer.prototype.render_scene = function (game_status) {
 // a and b are object elements of your array
 function compareScore(a,b) {
     return a["RoundScore"] - b["RoundScore"];
+}
+
+function compare_gamedone(a,b){
+    if (a[1]["TotalScore"] < b[1]["TotalScore"] ){
+        return 1
+    }
+    if (a[1]["TotalScore"] > b[1]["TotalScore"] ){
+        return -1
+    }
+    return 0
 }
 
 Viewer.prototype.paint_cell = function(x, y, color) {

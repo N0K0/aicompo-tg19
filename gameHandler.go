@@ -507,7 +507,7 @@ func NewConfigHolder() *GameConfigHolder {
 		turnTimeMin: 400 * time.Millisecond,
 		turnTimeMax: 800 * time.Millisecond,
 
-		GameRounds:     2,
+		GameRounds:     10,
 		RoundTicks:     1000,
 		targetFood:     2,    // The number of food we are trying to have on the map at once
 		contWithWinner: true, // Should end game when winners is clear (for example 3/5 wins already)
