@@ -45,19 +45,22 @@ AdminConnection.prototype.adminDisconnect = function() {
 
 AdminConnection.prototype.parseAdminEvent = function(evt) {
     let json = JSON.parse(evt.data);
-
+    console.log(json.type);
     switch (json.type) {
         case "config_push":
             import_settings(json.message);
             break;
-
         case "players":
             update_players(json.message);
+            break;
+        case "game_done":
+            showScreen(5);
             break;
         default:
             console.log("Unable to parse admin message");
             break;
     }
+
 };
 
 AdminConnection.prototype.initSystem = function() {
@@ -144,3 +147,5 @@ AdminConnection.prototype.create_simple_player = function(){
     create_player();
     console.log("Players: "  +Object.keys(local_players).length)
 };
+
+

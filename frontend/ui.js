@@ -9,6 +9,7 @@ let screen_menu = document.getElementById("menu");
 let screen_gameover = document.getElementById("gameover");
 let screen_setting = document.getElementById("setting");
 let screen_lobby = document.getElementById("lobby");
+let screen_postgame = document.getElementById("postgame");
 
 // Main menu
 let button_newgame_menu = document.getElementById("newgame_menu");
@@ -131,7 +132,6 @@ function showScreen(screen_opt){
             screen_gameover.style.display = "none";
             screen_lobby.style.display = "none";
             break;
-
         case 1:
             screen_snake_ui.style.display = "none";
             screen_snake.style.display = "none";
@@ -140,7 +140,6 @@ function showScreen(screen_opt){
             screen_gameover.style.display = "none";
             screen_lobby.style.display = "none";
             break;
-
         case 2:
             fetch_settings();
             screen_snake_ui.style.display = "none";
@@ -150,7 +149,6 @@ function showScreen(screen_opt){
             screen_gameover.style.display = "none";
             screen_lobby.style.display = "none";
             break;
-
         case 3:
             screen_snake_ui.style.display = "none";
             screen_snake.style.display = "none";
@@ -167,6 +165,14 @@ function showScreen(screen_opt){
             screen_setting.style.display = "none";
             screen_gameover.style.display = "none";
             screen_lobby.style.display = "block";
+            break;
+        case 5:
+            screen_snake_ui.style.display = "none";
+            screen_snake.style.display = "none";
+            screen_menu.style.display = "none";
+            screen_setting.style.display = "none";
+            screen_gameover.style.display = "none";
+            screen_lobby.style.display = "none";
             break;
     }
 }
@@ -237,11 +243,8 @@ function import_settings(payload){
 }
 
 function update_players(message) {
-    console.log("Updating the players state");
     let players = JSON.parse(message);
-
     update_player_ui(players);
-
 }
 
 function update_player_ui(players_json){

@@ -4,11 +4,12 @@ import (
 	"encoding/json"
 	"errors"
 	"log"
+	"math/rand"
+	"strconv"
 	"sync"
 	"time"
 
 	"github.com/google/logger"
-	"github.com/gorilla/websocket"
 )
 
 type gamestate int
@@ -59,10 +60,11 @@ type GameHandler struct {
 
 	adminChan chan string
 	turnDone  chan bool
+	gameDone  chan bool
 
 	// Game info
-	GameNumber  int
 	RoundNumber int
+	TotalRounds int
 	GameMap     GameMap
 	baseMap     GameMap // A copy for safe keeping
 	CurrentTick int
@@ -80,19 +82,21 @@ func newGameHandler() *GameHandler {
 		unregister:  make(chan *Player, 5),
 		adminChan:   make(chan string, 5),
 		turnDone:    make(chan bool, 2),
-		GameNumber:  0,
+		gameDone:    make(chan bool, 2),
 		RoundNumber: 0,
 		config:      NewConfigHolder(),
 	}
 
 	gh.timerDeadline = time.NewTimer(gh.config.turnTimeMin)
 	gh.timerMinline = time.NewTimer(gh.config.turnTimeMax)
-
+	gh.TotalRounds = gh.config.GameRounds
 	return gh
 }
 
 func (g *GameHandler) run() {
 	logger.Info("GameHandler started")
+	ticker := time.NewTicker(200 * time.Millisecond)
+	defer ticker.Stop()
 	defer log.Panic("GameHandler Stopped")
 	go g.gameState()
 	for {
@@ -107,17 +111,22 @@ func (g *GameHandler) run() {
 				continue
 			}
 
-			g.man.am.pushPlayers()
+			g.man.am.pushState()
 		case player := <-g.unregister:
 			logger.Infof("Unregistering %v", player)
 
 			delete(g.players, player)
 			err := player.conn.Close()
-			g.man.am.pushPlayers()
+			g.man.am.pushState()
 
 			if err != nil {
 				logger.Info("Problems closing websocket")
 			}
+		case <-ticker.C:
+			if g.man.am == nil {
+				continue
+			}
+			g.man.am.pushState()
 		}
 	}
 }
@@ -144,6 +153,9 @@ func (g *GameHandler) running() {
 	g.timerDeadline = time.NewTimer(g.config.turnTimeMax)
 	g.timeStamp = time.Now()
 
+	defer g.timerMinline.Stop()
+	defer g.timerDeadline.Stop()
+
 	for {
 		select {
 		case <-g.timerMinline.C:
@@ -159,11 +171,20 @@ func (g *GameHandler) running() {
 		case all := <-g.turnDone:
 			logger.Infof("Turn is done. All: %v", all)
 			g.execTurn()
+			g.man.am.pushState()
+			g.gameView.qSend <- g.generateStatusJson()
 			g.newTurn()
+			g.timeStamp = time.Now()
+		case <-g.gameDone:
+			logger.Info("Game done!")
+			g.Status = gameDone
+			g.man.am.gameDone()
+			return
 		default:
 			timeMark := time.Now().After(g.timeStamp.Add(g.config.turnTimeMin))
 			// If all is done and we are after the timestamp
 			if g.checkPlayersDone() && timeMark {
+				logger.Info("Default turn is done triggered")
 				g.turnDone <- true
 			}
 		}
@@ -172,21 +193,11 @@ func (g *GameHandler) running() {
 
 func (g *GameHandler) checkPlayersDone() bool {
 	for p := range g.players {
-		if p.status != CommandSent {
+		if p.command == "" && p.status != Dead {
 			return false
 		}
 	}
-	logger.Info("Players done")
-
 	return true
-}
-
-func (g *GameHandler) roundDone() {
-	time.Sleep(time.Nanosecond)
-}
-
-func (g *GameHandler) gameDone() {
-	time.Sleep(time.Nanosecond)
 }
 
 // newTurn reset states for the clients and readies everything for a new round
@@ -197,10 +208,12 @@ func (g *GameHandler) newTurn() {
 	g.pushToPlayers()
 
 	for p := range g.players {
-		if p.status == CommandWait {
-			p.ticksLost += 1
+		if p.status == Dead {
+			continue
 		}
+
 		p.status = CommandWait
+		p.command = ""
 	}
 
 	// Sets the new timers
@@ -208,6 +221,13 @@ func (g *GameHandler) newTurn() {
 	g.timerMinline.Stop()
 	g.timerDeadline.Reset(g.config.turnTimeMax)
 	g.timerMinline.Reset(g.config.turnTimeMin)
+}
+
+func (g *GameHandler) setRandomMove() string {
+	moves := []string{"left", "right", "top", "bottom"}
+	move := moves[rand.Intn(len(moves))]
+	logger.Infof("Moving %v", move)
+	return move
 }
 
 // Run trough all the clients in an order
@@ -220,25 +240,122 @@ func (g *GameHandler) execTurn() {
 	g.mapLock.Lock()
 	// TODO: Update map targets
 
-	// TODO: Check for collisions
+	for p := range g.players {
+		if p.status == Dead {
+			continue
+		}
+
+		if p.command == "" {
+			logger.Infof("%v no move set. Settings random move", p.Username)
+			p.command = g.setRandomMove()
+			p.ticksLost += 1
+		}
+		p.status = CommandSent
+		p.setMove()
+	}
+
+	var nextCoords []coord // Kills you
+	var tailCoords []coord // Will not kill you
+	for p := range g.players {
+		if p.status == Dead {
+			continue
+		}
+		nextCoords = append(nextCoords, p.next)
+		tailCoords = append(tailCoords, p.Tail)
+	}
+
+	// update Locations to the next node, remove tail if size says so
+	for p := range g.players {
+		logger.Infof("U: %v, n: %v, s: %v", p.Username, p.next, p.status)
+		if p.status != CommandSent {
+			continue
+		}
+
+		block := p.checkSnakeCollision(nextCoords, tailCoords, g)
+		r, _ := block.toRune()
+		logger.Infof("Collision with %v", strconv.QuoteRuneToASCII(r))
+
+		if block == blockSnake || block == blockWall {
+			p.die()
+
+			// Grant everyone else that is alive a point
+			for p := range g.players {
+				if p.status != Dead {
+					p.RoundScore += 1
+				}
+			}
+
+			continue
+		} else if block == blockFood {
+			logger.Infof("%v hit food", p.Username)
+			g.GameMap.removeFood(p)
+			g.GameMap.spreadFood(g.config.targetFood)
+		}
+
+		p.makeMove(block, g.GameMap)
+	}
+
+	// Removes all snakes from the maps
+	posX, posY, _ := g.GameMap.getAllEmpty(blockSnake)
+
+	for i := range posX {
+		_ = g.GameMap.setTile(posX[i], posY[i], blockClear)
+	}
+
+	// Regenerates snakes on map
+	for p := range g.players {
+		for i := 0; i < p.Size; i++ {
+			_ = g.GameMap.setTile(p.PosX[i], p.PosY[i], blockSnake)
+		}
+	}
+
 	g.mapLock.Unlock()
 
 	if g.isRoundDone() {
 		//TODO: What to do when round is done
+		logger.Info("Round is done trigger")
+		for p := range g.players {
+			p.TotalScore += p.RoundScore
+			p.RoundScore = 0
+		}
+
+		if g.RoundNumber >= g.config.GameRounds {
+			logger.Info("Game over! Swapping to winner screen")
+			g.Status = pregame
+			g.gameDone <- true
+		}
+
+		g.initRound()
 	}
 }
 
 func (g *GameHandler) pushToPlayers() {
-	//TODO: Push data to players
-
 	for p := range g.players {
 		go p.pushGameState(g)
 	}
-
 }
 
 // Checks if ticks has been reached or there is less than two players left
 func (g *GameHandler) isRoundDone() bool {
+	logger.Info("Checking if round is done")
+	totalPlayers := len(g.players)
+	livePlayers := totalPlayers
+	for p := range g.players {
+		if p.status == Dead || p.status == Disconnected {
+			livePlayers -= 1
+		}
+	}
+
+	if livePlayers <= 1 {
+		logger.Info("One player left standing")
+		return true
+	}
+
+	if g.CurrentTick >= g.config.RoundTicks {
+		logger.Info("Round out of time")
+		return true
+	}
+
 	return false
 }
 
@@ -297,6 +414,11 @@ func (g *GameHandler) initGame() {
 	size := baseGameMapSize(len(g.players))
 	g.GameMap = baseGameMap(size, size, g.config.OuterWalls)
 	g.baseMap = g.GameMap
+
+	for p := range g.players {
+		p.status = ReadyToPlay
+	}
+
 }
 
 // This function sets all the values that should last for an entire round
@@ -305,21 +427,26 @@ func (g *GameHandler) initRound() {
 	logger.Info("Initializing new round")
 	// Reset ticks
 	g.CurrentTick = 0
-	g.GameMap = g.baseMap
+	g.RoundNumber += 1
+	g.GameMap = *g.setupGameMap()
 	// TODO: Make this work properly, make it so that we can pass a proper map, not just reinint this one
 
 	// Set pos of players
 	logger.Info("Init players")
 	for player := range g.players {
 		logger.Infof("p: %s", player.Username)
-		x, y, err := g.GameMap.findEmptySpot(false)
+		x, y, err := g.GameMap.findEmptySpot()
 		if err != nil {
 			panic("Could not init round, not enough space to start new round")
 		}
 		logger.Infof("pos: %v %v", x, y)
+		player.status = ReadyToPlay
 
 		player.PosX = []int{x, x, x}
 		player.PosY = []int{y, y, y}
+		player.Head = coord{x, y}
+		player.Tail = coord{x, y}
+
 		player.Size = 3
 		player.RoundScore = 0
 
@@ -327,46 +454,46 @@ func (g *GameHandler) initRound() {
 
 	// Set food
 	logger.Infof("Setting %v foods", g.config.targetFood)
-	food := 0
-	for food < g.config.targetFood {
-		x, y, err := g.GameMap.findEmptySpot(false)
-		logger.Infof("pos: %v %v", x, y)
-
-		if err != nil {
-			panic("Could not init round, not enough space to start new round")
-		}
-		food += 1
-
-		err = g.GameMap.setTile(x, y, blockFood)
-		if err != nil {
-			panic("Could not init round, not enough space to start new round")
-		}
-	}
-
+	g.GameMap.spreadFood(g.config.targetFood)
 	logger.Infof("Foods: %v", g.GameMap.Foods)
 
 }
 
-// Creates the status object used by the game frontend
-func (g *GameHandler) generateStatusJson() []byte {
+func (g *GameHandler) setupGameMap() *GameMap {
+	if g.config.mapSizeY != 0 && g.config.mapSizeX != 0 {
+		gm := baseGameMap(g.config.mapSizeX, g.config.mapSizeY, g.config.OuterWalls)
+		return &gm
+	}
+	size := baseGameMapSize(len(g.players))
+	gm := baseGameMap(size, size, g.config.OuterWalls)
+	return &gm
+}
 
+func (g *GameHandler) generateStatusObject() *StatusObject {
 	tmpPlayers := make(map[string]Player)
 
 	for k := range g.players {
 		tmpPlayers[k.Username] = *k
 	}
 
-	status := StatusObject{
+	return &StatusObject{
 		NumPlayers: len(tmpPlayers),
 		Players:    tmpPlayers,
 		GameStatus: *g,
 	}
+}
+
+// Creates the status object used by the game frontend
+func (g *GameHandler) generateStatusJson() []byte {
+
+	status := g.generateStatusObject()
 
 	bytes, err := json.Marshal(status)
 	if err != nil {
 		logger.Infof("Unable to marshal json")
 		panic("Unable to marshal json")
 	}
+	bytes = append(bytes, byte('\n'))
 	return bytes
 }
 
@@ -380,47 +507,10 @@ func NewConfigHolder() *GameConfigHolder {
 		turnTimeMin: 400 * time.Millisecond,
 		turnTimeMax: 800 * time.Millisecond,
 
-		GameRounds:     5,
+		GameRounds:     2,
 		RoundTicks:     1000,
 		targetFood:     2,    // The number of food we are trying to have on the map at once
 		contWithWinner: true, // Should end game when winners is clear (for example 3/5 wins already)
 
 	}
-}
-
-// Player struct is strongly connected to the player struct.
-// There should be an 1:1 ration between those entities
-type Player struct {
-	// The websocket to the client
-	conn     *websocket.Conn
-	connLock sync.Mutex
-
-	// The Username of the client
-	Username string `json:"username"`
-
-	// Color in a format that
-	Color string
-
-	// The status of the connection
-	status Status
-
-	// Last command read
-	command string
-
-	// Channels for caching data
-	qSend chan []byte
-	qRecv chan []byte
-	// Logic data
-	ticksLost    int
-	gmUnregister chan *Player
-
-	// GameData
-	// X,Y is two lists which when zipped creates the coordinates of the snake
-	PosX       []int
-	PosY       []int
-	HeadX      int
-	HeadY      int
-	Size       int
-	TotalScore int
-	RoundScore int
 }

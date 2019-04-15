@@ -82,8 +82,6 @@ func (gm *GameMap) setTile(x int, y int, value block) error {
 
 	switch value {
 	case blockWall:
-		fallthrough
-	case blockSnake:
 		gm.Walls = append(gm.Walls, Wall{x, y})
 	case blockSnakeHead:
 		gm.Heads = append(gm.Heads, Head{x, y})
@@ -138,14 +136,23 @@ func toBlock(r rune) (block, error) {
 	return -1, errors.New("unable to convert rune to block")
 }
 
-func (gm *GameMap) getAllEmpty() ([]int, []int, error) {
+func (gm *GameMap) findCoordInList(c *coord, list []coord) (int, error) {
+	for index, t := range list {
+		if t.X == c.X && t.Y == c.Y {
+			return index, nil
+		}
+	}
+	return -1, errors.New("could not find coord in list")
+}
+
+func (gm *GameMap) getAllEmpty(blockType block) ([]int, []int, error) {
 	listX := make([]int, 0)
 	listY := make([]int, 0)
 
 	for indexY := range gm.Content {
 		yLine := gm.Content[indexY]
 		for indexX, xBlock := range yLine {
-			if xBlock != blockClear {
+			if xBlock != blockType {
 				continue
 			}
 			listX = append(listX, indexX)
@@ -165,12 +172,8 @@ func (gm *GameMap) getAllEmpty() ([]int, []int, error) {
 // The fair bool value exists for trying to place the objects some part away from the snakes head
 // Note that fair does not do anything yet!
 // Returns the x,y coordinates for a empty spot
-func (gm *GameMap) findEmptySpot(fair bool) (int, int, error) {
-	if fair {
-		logger.Warning("the param fair is not implemented yet!")
-	}
-
-	listX, listY, err := gm.getAllEmpty()
+func (gm *GameMap) findEmptySpot() (int, int, error) {
+	listX, listY, err := gm.getAllEmpty(blockClear)
 
 	if err != nil {
 		return -1, -1, err
@@ -298,6 +301,40 @@ func mapFromString(mapInput string) GameMap {
 	return gm
 }
 
-func (m *GameMap) spreadFood(targetAmount int) {
+func (gm *GameMap) removeFood(p *Player) {
+	x := p.next.X
+	y := p.next.Y
+	index := 0
+	for _, t := range gm.Foods {
+		if t.X == x && t.Y == y {
+			break
+		}
+		index++
+	}
 
+	gm.Foods[len(gm.Foods)-1], gm.Foods[index] = gm.Foods[index], gm.Foods[len(gm.Foods)-1]
+	gm.Foods = gm.Foods[:len(gm.Foods)-1]
+
+	err := gm.setTile(x, y, blockClear)
+	if err != nil {
+		logger.Info("Was unable to remove food tile")
+	}
+}
+
+func (gm *GameMap) spreadFood(targetAmount int) {
+	food := len(gm.Foods)
+	for food < targetAmount {
+		x, y, err := gm.findEmptySpot()
+		logger.Infof("Food pos: %v %v", x, y)
+
+		if err != nil {
+			panic("Could not init round, not enough space to start new round")
+		}
+		food += 1
+
+		err = gm.setTile(x, y, blockFood)
+		if err != nil {
+			panic("Could not init round, not enough space to start new round")
+		}
+	}
 }

@@ -41,7 +41,7 @@ Player.prototype.playerConnect = function() {
         player.connection = null;
     };
     this.connection.onmessage = function(evt) {
-        parseEvent(evt.data)
+        player.parseEvent(evt.data);
     };
     this.connection.onerror = function(evt) {
         console.log("ERROR: " + evt.data);
@@ -58,7 +58,7 @@ Player.prototype.updateUsername = function() {
     console.log("Sending username: " + this.name);
     let payload = {
         type: "username",
-        command: this.name,
+        value: this.name,
     };
     this.connection.send(JSON.stringify(payload));
 };
@@ -68,15 +68,85 @@ Player.prototype.updateColor = function() {
 
     let payload = {
         type: "color",
-        command: this.color,
+        value: this.color,
     };
     this.connection.send(JSON.stringify(payload));
 };
 
-function parseEvent(evt_data) {
-    let data = JSON.parse(evt_data)
-    console.log(data)
-}
+Player.prototype.move = function(command) {
+    console.log("Moving:" + command);
+    this.sendCommand("move", command);
+};
+
+Player.prototype.sendCommand = function(type, command) {
+    let payload = {
+        type:  type,
+        value: command,
+    };
+    this.connection.send(JSON.stringify(payload));
+};
+
+Player.prototype.moveToFood = function(){
+    let head = this.data.Self.Head;
+    let food = this.data.GameStatus.GameMap.Foods;
+
+    let closest;
+    let closest_dist = Number.MAX_SAFE_INTEGER;
+
+    for (let i = 0; i < food.length; ++i) {
+        let f = food[i];
+        let x_len = f["X"] - head["X"];
+        let y_len = f["Y"] - head["Y"];
+        let len = Math.abs(x_len) + Math.abs(y_len);
+
+        if (len < closest_dist) {
+            closest_dist = len;
+            closest = f;
+        }
+    }
+
+    let x_offset = closest.X - head.X;
+    let y_offset = closest.Y - head.Y;
+
+    if (x_offset > y_offset){
+        if(y_offset > 0) {
+            this.move("up")
+        } else if(y_offset < 0) {
+            this.move("down")
+        }else if(x_offset > 0) {
+            this.move("right")
+        } else if(x_offset < 0) {
+            this.move("left")
+        } else {
+            console.log("No moves left");
+            this.move("left")
+        }
+    }else {
+        if(x_offset > 0) {
+            this.move("right")
+        } else if(x_offset < 0) {
+            this.move("left")
+        } else if(y_offset > 0) {
+            this.move("up")
+        } else if(y_offset < 0) {
+            this.move("down")
+        } else {
+            console.log("No moves left");
+            this.move("left")
+        }
+    }
+
+
+};
+
+Player.prototype.findClosestTile = function(type) {
+
+};
+
+Player.prototype.parseEvent = function(evt_data) {
+    this.data = JSON.parse(evt_data);
+    this.moveToFood(this.data)
+};
 
 function getRandomRgb() {
     let num = Math.round(0xffffff * Math.random());

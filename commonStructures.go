@@ -8,7 +8,7 @@ import (
 // Command struct defines how commands from players/admin should be formatted
 type Command struct {
 	Type  string `json:"type"`
-	Value string `json:"command"`
+	Value string `json:"value"`
 }
 
 type Envelope struct {
@@ -34,6 +34,11 @@ type StatusObject struct {
 	GameStatus GameHandler
 }
 
+type PlayerStatusObject struct {
+	*StatusObject
+	Self *Player
+}
+
 type coord struct {
 	X int
 	Y int
@@ -42,6 +47,7 @@ type coord struct {
 type Food coord
 type Wall coord
 type Head coord
+type Snake coord
 
 type GameConfigHolder struct {
 	MinTurnUpdate int    `json:"minTurnUpdate"`

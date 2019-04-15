@@ -51,27 +51,26 @@ Viewer.prototype.paint_canvas = function () {
 
 Viewer.prototype.render_scene = function (game_status) {
     this.paint_canvas();
-    //console.log(game_status);
+    console.log(game_status);
 
-    this.mapsizeX = game_status.GameStatus.GameMap.SizeX - 1;
-    this.mapsizeY = game_status.GameStatus.GameMap.SizeY - 1;
 
-    // Render snakes
-    let snakes = game_status.Players;
-    for (let snake in snakes) {
-        let s = snakes[snake];
-        //console.log(s);
-        let col_str = s.Color;
+    this.current_round = game_status["GameStatus"]["RoundNumber"];
+    this.round_total = game_status["GameStatus"]["TotalRounds"];
 
-        for (let b in s.PosX) {
-            let x = s.PosX[b];
-            let y = s.PosY[b];
-            // TODO: Respect colors
-            this.paint_cell(x, y, col_str)
-        }
+    console.log(this.current_round);
+    console.log(this.round_total);
+
+    if(this.current_round > this.round_total) {
+        showScreen(5);
+        return
     }
+
+    this.mapsizeX = game_status["GameStatus"]["GameMap"]["SizeX"] - 1;
+    this.mapsizeY = game_status["GameStatus"]["GameMap"]["SizeY"] - 1;
+
+
     // Render food
-    let foods = game_status.GameStatus.GameMap.Foods;
+    let foods = game_status["GameStatus"]["GameMap"]["Foods"];
     for (let food in foods) {
         let f = foods[food];
         //console.log(f);
@@ -81,14 +80,31 @@ Viewer.prototype.render_scene = function (game_status) {
     }
 
     // Render walls
-    let walls = game_status.GameStatus.GameMap.Walls;
+    let walls = game_status["GameStatus"]["GameMap"]["Walls"];
     for (let wall in walls) {
         let w = walls[wall];
         let x = w.X;
         let y = w.Y;
-
         this.paint_cell(x, y, "white");
     }
+
+    // Render snakes
+    let snakes = game_status["Players"];
+    for (let snake in snakes) {
+        let s = snakes[snake];
+        let col_str = s["Color"];
+
+        for (let b in s["PosX"]) {
+            let x = s["PosX"][b];
+            let y = s["PosY"][b];
+            // TODO: Respect colors
+            this.paint_cell(x, y, col_str)
+        }
+    }
+
+    // Render head
+
+    // Render tail
 
     // Render UI
 
@@ -96,8 +112,8 @@ Viewer.prototype.render_scene = function (game_status) {
     let div_scoreboard = document.getElementById("scoreboard");
     let div_round = document.getElementById("round");
 
-    div_tick.innerText = "Tick: " + game_status.GameStatus.CurrentTick;
-    div_round.innerText = "Round: " + game_status.GameStatus.RoundNumber;
+    div_tick.innerText = "Tick: " + game_status["GameStatus"]["CurrentTick"];
+    div_round.innerText = "Round: " + this.current_round + " / " + this.round_total;
 
     let div_score_clone = div_scoreboard.cloneNode(false);
 
@@ -112,7 +128,7 @@ Viewer.prototype.render_scene = function (game_status) {
         let p = players[player][1];
         let tmp_div = document.createElement("div");
         //console.log(p);
-        tmp_div.innerText = p.username + ": " + p.RoundScore + "  (" + p.TotalScore+ ")";
+        tmp_div.innerText = p.username + ": " + p["RoundScore"] + "  (" + p["TotalScore"]+ ")";
 
         div_score_clone.appendChild(tmp_div)
     }
@@ -122,7 +138,7 @@ Viewer.prototype.render_scene = function (game_status) {
 
 // a and b are object elements of your array
 function compareScore(a,b) {
-    return a.RoundScore - b.RoundScore;
+    return a["RoundScore"] - b["RoundScore"];
 }
 
 Viewer.prototype.paint_cell = function(x, y, color) {

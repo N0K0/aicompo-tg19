@@ -42,7 +42,6 @@ func (admin *adminHandler) run() {
 			admin.adminParseCommand(incoming)
 			break
 		case <-loggerTicker.C:
-			admin.pushPlayers()
 			break
 		}
 	}
@@ -198,7 +197,8 @@ func (admin *adminHandler) adminPushConfig() {
 	admin.qSend <- jsonString
 }
 
-func (admin *adminHandler) pushPlayers() {
+// Pushes the gamestate to the frontend
+func (admin *adminHandler) pushState() {
 	//logger.Info("Pushing players")
 	admin.gm.playersLock.Lock()
 	defer admin.gm.playersLock.Unlock()
@@ -217,22 +217,16 @@ func (admin *adminHandler) pushPlayers() {
 		admin.sendError("Problems with creating message")
 		return
 	}
-
 	env := Envelope{
 		Type:    "players",
 		Message: string(jsonString),
 	}
-
-	//logger.Infof("String: %s", jsonString)
-	//logger.Infof("String: %s", env)
 
 	jsonString, err = json.Marshal(env)
 	if err != nil {
 		admin.sendError("Problems with creating message")
 		return
 	}
-
-	//logger.Info(string(jsonString))
 	admin.qSend <- jsonString
 }
 
@@ -250,9 +244,22 @@ func (admin *adminHandler) kickPlayer(playerName string) error {
 	return errors.New("unable to find the player you want to kick")
 }
 
-func (admin *adminHandler) sendError(message string) {
-	admin.mutex.Lock()
+func (admin *adminHandler) gameDone() {
+	msg := Envelope{
+		Type:    "game_done",
+		Message: "",
+	}
 
+	jsonString, err := json.Marshal(msg)
+	if err != nil {
+		logger.Error("Problems with creating error message")
+		return
+	}
+
+	admin.qSend <- jsonString
+}
+
+func (admin *adminHandler) sendError(message string) {
 	msg := Envelope{
 		Type:    "error",
 		Message: message,
@@ -266,7 +273,6 @@ func (admin *adminHandler) sendError(message string) {
 
 	logger.Infof("Sending error: %s", message)
 	admin.qSend <- jsonString
-	admin.mutex.Unlock()
 }
 
 func (admin *adminHandler) writeSocket() {
@@ -311,6 +317,7 @@ func (admin *adminHandler) writeSocket() {
 			}
 
 			// Add queued chat messages to the current websocket message.
+
 			n := len(admin.qSend)
 			for i := 0; i < n; i++ {
 				_, err := w.Write(<-admin.qSend)

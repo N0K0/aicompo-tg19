@@ -48,7 +48,7 @@ func wsConnector(manager *Managers, w http.ResponseWriter, r *http.Request) {
 		ticksLost:    0,
 		PosX:         make([]int, 0),
 		PosY:         make([]int, 0),
-		Size:         0,
+		Size:         3,
 	}
 
 	logger.Infof("New socket from %v", ws.RemoteAddr())
