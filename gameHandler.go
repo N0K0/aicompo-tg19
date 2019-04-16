@@ -192,6 +192,8 @@ func (g *GameHandler) running() {
 }
 
 func (g *GameHandler) checkPlayersDone() bool {
+	g.playersLock.Lock()
+	defer g.playersLock.Unlock()
 	for p := range g.players {
 		if p.command == "" && p.status != Dead {
 			return false
@@ -206,6 +208,9 @@ func (g *GameHandler) newTurn() {
 	logger.Info("Init new turn")
 
 	g.pushToPlayers()
+
+	g.playersLock.Lock()
+	defer g.playersLock.Unlock()
 
 	for p := range g.players {
 		if p.status == Dead {
@@ -240,6 +245,8 @@ func (g *GameHandler) execTurn() {
 	g.mapLock.Lock()
 	// TODO: Update map targets
 
+	g.playersLock.Lock()
+	defer g.playersLock.Unlock()
 	for p := range g.players {
 		if p.status == Dead {
 			continue
@@ -279,11 +286,16 @@ func (g *GameHandler) execTurn() {
 			p.die()
 
 			// Grant everyone else that is alive a point
-			for p := range g.players {
-				if p.status != Dead {
-					p.RoundScore += 1
-				}
+			bonus := 0
+			switch g.playersLeft() {
+			case 3:
+				bonus = 1
+			case 2:
+				bonus = 1
+			case 1:
+				bonus = 3
 			}
+			g.grantBonusPoints(bonus)
 
 			continue
 		} else if block == blockFood {
@@ -330,8 +342,32 @@ func (g *GameHandler) execTurn() {
 }
 
 func (g *GameHandler) pushToPlayers() {
+	g.playersLock.Lock()
+	defer g.playersLock.Unlock()
 	for p := range g.players {
 		go p.pushGameState(g)
+	}
+}
+
+func (g *GameHandler) playersLeft() int {
+	left := 0
+	g.playersLock.Lock()
+	defer g.playersLock.Unlock()
+	for p := range g.players {
+		if p.status != Dead {
+			left++
+		}
+	}
+	return left
+}
+
+func (g *GameHandler) grantBonusPoints(points int) {
+	g.playersLock.Lock()
+	defer g.playersLock.Unlock()
+	for p := range g.players {
+		if p.status != Dead {
+			p.RoundScore += points
+		}
 	}
 }
 
@@ -340,6 +376,8 @@ func (g *GameHandler) isRoundDone() bool {
 	logger.Info("Checking if round is done")
 	totalPlayers := len(g.players)
 	livePlayers := totalPlayers
+	g.playersLock.Lock()
+	defer g.playersLock.Unlock()
 	for p := range g.players {
 		if p.status == Dead || p.status == Disconnected {
 			livePlayers -= 1
@@ -370,6 +408,9 @@ func (g *GameHandler) startGame() {
 	g.playersLock.Lock()
 
 	logger.Info("Kicking all players without name")
+	g.playersLock.Lock()
+	defer g.playersLock.Unlock()
+
 	for player := range g.players {
 		if player.status == NoUsername {
 			g.man.gm.unregister <- player
@@ -417,6 +458,9 @@ func (g *GameHandler) initGame() {
 
 	for p := range g.players {
 		p.status = ReadyToPlay
+		p.RoundScore = 0
+		p.TotalScore = 0
+
 	}
 
 }
