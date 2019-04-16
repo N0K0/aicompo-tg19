@@ -217,6 +217,20 @@ func (p *Player) sendError(message string) {
 	p.qSend <- jsonString
 }
 
+func (p *Player) sendInfo(message string) {
+	msg := Envelope{
+		Type:    "info",
+		Message: message,
+	}
+
+	jsonString, err := json.Marshal(msg)
+	if err != nil {
+		logger.Info("Problems with creating error message")
+	}
+
+	p.qSend <- jsonString
+}
+
 func (p *Player) setUsername(cmd *Command) {
 	username := cmd.Value
 	logger.Infof("Setting username %v", username)
@@ -234,6 +248,7 @@ func (p *Player) setUsername(cmd *Command) {
 	p.Username = username
 	p.status = ReadyToPlay
 	logger.Infof("Player given name: %v", username)
+	p.sendInfo("Username OK!")
 }
 
 // Takes in an arbitrary string. Is passed to the frontend to be used with the ctx.fillStyle property
@@ -241,6 +256,8 @@ func (p *Player) setColor(cmd *Command) {
 	color := cmd.Value
 	p.Color = color
 	logger.Infof("Setting color for %v '%v'", p.Username, p.Color)
+	p.sendInfo("Color OK!")
+
 }
 
 func (p *Player) setMove() {
@@ -362,6 +379,7 @@ func (p *Player) run() {
 	go p.writePump()
 	go p.readPump()
 	go p.parseCommand()
+	p.sendInfo("Hi!")
 }
 
 // Player struct is strongly connected to the player struct.
