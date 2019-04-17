@@ -21,7 +21,11 @@
  * The map will have other walls. (Without walls is not implemented yet!)
  * If any bugs that do not change the game outside the rules is found they will be patched during the week (Just poke us!
  ).
-  
+ 
+## Binaries
+
+You can find the precompiled binaries for the  application under releases
+https://github.com/N0K0/aicompo-tg19/releases
 
 ## Communication Protocol
 This game is based on communication via JSON objects over websockets
@@ -269,6 +273,8 @@ On top of this there is a simple debugging panel at [localhost:8080/debug.html](
 From this panel you can add the premade AI made in Javascript
 
 You may also 
+
+
 
 ## How to compile
 
