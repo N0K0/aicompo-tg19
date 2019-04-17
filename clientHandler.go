@@ -314,9 +314,6 @@ func (p *Player) die() {
 	p.status = Dead
 	p.PosX = []int{}
 	p.PosY = []int{}
-	p.Head = coord{-1, -1}
-	p.Tail = coord{-1, -1}
-	p.next = coord{-1, -1}
 
 	p.Size = 0
 }

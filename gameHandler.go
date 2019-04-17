@@ -113,6 +113,9 @@ func (g *GameHandler) run() {
 
 			g.man.am.pushState()
 		case player := <-g.unregister:
+			g.playersLock.Lock()
+			defer g.playersLock.Unlock()
+
 			logger.Infof("Unregistering %v", player)
 
 			delete(g.players, player)
@@ -192,8 +195,7 @@ func (g *GameHandler) running() {
 }
 
 func (g *GameHandler) checkPlayersDone() bool {
-	g.playersLock.Lock()
-	defer g.playersLock.Unlock()
+
 	for p := range g.players {
 		if p.command == "" && p.status != Dead {
 			return false
@@ -209,11 +211,11 @@ func (g *GameHandler) newTurn() {
 
 	g.pushToPlayers()
 
-	g.playersLock.Lock()
-	defer g.playersLock.Unlock()
-
 	for p := range g.players {
 		if p.status == Dead {
+			p.Head = coord{-1, -1}
+			p.Tail = coord{-1, -1}
+			p.next = coord{-1, -1}
 			continue
 		}
 
@@ -245,8 +247,6 @@ func (g *GameHandler) execTurn() {
 	g.mapLock.Lock()
 	// TODO: Update map targets
 
-	g.playersLock.Lock()
-	defer g.playersLock.Unlock()
 	for p := range g.players {
 		if p.status == Dead {
 			continue
@@ -342,8 +342,7 @@ func (g *GameHandler) execTurn() {
 }
 
 func (g *GameHandler) pushToPlayers() {
-	g.playersLock.Lock()
-	defer g.playersLock.Unlock()
+
 	for p := range g.players {
 		go p.pushGameState(g)
 	}
@@ -351,8 +350,7 @@ func (g *GameHandler) pushToPlayers() {
 
 func (g *GameHandler) playersLeft() int {
 	left := 0
-	g.playersLock.Lock()
-	defer g.playersLock.Unlock()
+
 	for p := range g.players {
 		if p.status != Dead {
 			left++
@@ -408,8 +406,6 @@ func (g *GameHandler) startGame() {
 	g.playersLock.Lock()
 
 	logger.Info("Kicking all players without name")
-	g.playersLock.Lock()
-	defer g.playersLock.Unlock()
 
 	for player := range g.players {
 		if player.status == NoUsername {
@@ -516,6 +512,8 @@ func (g *GameHandler) setupGameMap() *GameMap {
 func (g *GameHandler) generateStatusObject() *StatusObject {
 	tmpPlayers := make(map[string]Player)
 
+	g.playersLock.Lock()
+	defer g.playersLock.Unlock()
 	for k := range g.players {
 		tmpPlayers[k.Username] = *k
 	}

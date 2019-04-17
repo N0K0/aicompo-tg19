@@ -200,12 +200,9 @@ func (admin *adminHandler) adminPushConfig() {
 // Pushes the gamestate to the frontend
 func (admin *adminHandler) pushState() {
 	//logger.Info("Pushing players")
+
 	admin.gm.playersLock.Lock()
 	defer admin.gm.playersLock.Unlock()
-
-	//logger.Info("Push players")
-
-	//logger.Infof("%v", admin.gm.players)
 
 	tmpPlayers := make(map[string]*Player)
 	for k := range admin.gm.players {
