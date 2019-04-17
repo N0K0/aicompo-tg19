@@ -6,7 +6,6 @@
  * You only move one square per game tick.
  * If you don't send a new command until the new game tick the game picks a random direction for you.
  * Each game tick the latest command sent by all players is handled at the same time. 
- * If you try to move into a square that is already occupied by another bot the move fails.
  * You win by having the most points at the end of the game.
  * The round is over when there are either no pellets left, or only one player left.
  * The round is over when tick 1000 is reached.
@@ -20,7 +19,8 @@
  * The last snake standing is granted 3 points.
  * The map size is decided based on the number of players at the map at once.
  * The map will have other walls. (Without walls is not implemented yet!)
- * If any bugs that do not change the game outside the rules they will be patched during.
+ * If any bugs that do not change the game outside the rules is found they will be patched during the week (Just poke us!
+ ).
   
 
 ## Communication Protocol
@@ -32,7 +32,7 @@ The user should first connect to the communication endpoint for users.
 Which is located at [ws://localhost:8080/ws](). 
 Any attempt to connect to any of the other endpoint will end in an disqualification
 
-When a player is connected sucsessfully it will recive the following message:
+When a player is connected successfully it will receive the following message:
 ```JSON
 {
   "type":"info",
@@ -57,7 +57,7 @@ If good:
 ```
 
 ### For setting a color:
-The ```value``` field can be any color that is accepted by the [fillSytle property]
+The ```value``` field can be any color that is accepted by the [fillStyle property]
 ```JSON
 {
   "type":"color",
@@ -73,7 +73,7 @@ If good:
 }
 ```
 
-When the game is started the player will start to revice objects that looks like the following:
+When the game is started the player will start to receive objects that looks like the following:
 ### Understanding the map during the game
 
 ```JSON
@@ -208,14 +208,14 @@ The structure contains the following:
 * Players: A map of the players where the key is their name
     * username: Their username
     * Color: The fillstyle property for that player. Generally not something you need to care about
-    * PosX: An list of all the X posistions of the snakes blocks
-    * PosY: An list of all the Y posistions of the snakes blocks
+    * PosX: An list of all the X positions of the snakes blocks
+    * PosY: An list of all the Y positions of the snakes blocks
     * Head: The front block of the snake
     * Tail: The last block of the snake
     * Size: Number of blocks in a snake
-    * TotalScore: The accumelated score of an snake this game
+    * TotalScore: The accumulated score of an snake this game
     * Roundscore: The score a snake has gotten this round
-* GameStatus: All the mapdata and more
+* GameStatus: All the map data and more
     * Status: Will generally only be ```Running``` when messages is received. 
         * The other states are as follows, but might not be exposed to the user:
             * pregame
@@ -223,7 +223,7 @@ The structure contains the following:
             * running
             * roundDone
             * gameDone
-        * RoundNumber: The current roundnumber
+        * RoundNumber: The current round number
         * TotalRounds: The total number of rounds
         * GameMap
             * SizeX: The size of the map in the X dimension
@@ -252,7 +252,7 @@ To move a player send the following object:
 }
 ```
 
-Value can be one of the following:
+- Value can be one of the following:
     * up
     * down
     * left
@@ -263,8 +263,12 @@ This has a 25% chance of killing the snake due to crashing into itself.
 
 
 ## Running some tests
-When you have the binary running you will find a server listening on [localhost:8080]()
+When you have the binary running you will find a server listening on [localhost:8080]()  
 On top of this there is a simple debugging panel at [localhost:8080/debug.html]()
+
+From this panel you can add the premade AI made in Javascript
+
+You may also 
 
 ## How to compile
 
@@ -278,3 +282,5 @@ We also need two external packages for Go. Just run the following commands in yo
 go get github.com/google/logger
 go get github.com/gorilla/websocket
 ```
+
+Now you can either just run ```go build``` or ```go run``` 
