@@ -202,12 +202,12 @@ func (admin *adminHandler) pushState() {
 	//logger.Info("Pushing players")
 
 	admin.gm.playersLock.Lock()
-	defer admin.gm.playersLock.Unlock()
 
 	tmpPlayers := make(map[string]*Player)
 	for k := range admin.gm.players {
 		tmpPlayers[k.Username] = k
 	}
+	admin.gm.playersLock.Unlock()
 
 	jsonString, err := json.Marshal(tmpPlayers)
 	if err != nil {

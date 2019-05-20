@@ -128,7 +128,7 @@ func (gv *gameViewer) statusUpdater() {
 	for {
 		select {
 		case <-gv.statusTicker.C:
-			//logger.Info("Pushing new status")
+			logger.Info("Pushing new status")
 			gv.qSend <- gv.gm.generateStatusJson()
 		}
 	}

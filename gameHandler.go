@@ -114,12 +114,12 @@ func (g *GameHandler) run() {
 			g.man.am.pushState()
 		case player := <-g.unregister:
 			g.playersLock.Lock()
-			defer g.playersLock.Unlock()
 
 			logger.Infof("Unregistering %v", player)
 
 			delete(g.players, player)
 			err := player.conn.Close()
+			g.playersLock.Unlock()
 			g.man.am.pushState()
 
 			if err != nil {
@@ -195,7 +195,8 @@ func (g *GameHandler) running() {
 }
 
 func (g *GameHandler) checkPlayersDone() bool {
-
+	g.playersLock.Lock()
+	defer g.playersLock.Unlock()
 	for p := range g.players {
 		if p.command == "" && p.status != Dead {
 			return false
